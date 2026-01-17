@@ -162,3 +162,9 @@ declare module 'lucide-react/dist/esm/icons/chevron-right' {
   const ChevronRight: LucideIcon;
   export default ChevronRight;
 }
+
+declare module 'lucide-react/dist/esm/icons/eye' {
+  import type { LucideIcon } from 'lucide-react';
+  const Eye: LucideIcon;
+  export default Eye;
+}
