@@ -46,6 +46,7 @@ export function AddMemberDialog({
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [selectedSpouseId, setSelectedSpouseId] = useState<string | undefined>(undefined);
   const [selectedChildrenIds, setSelectedChildrenIds] = useState<string[]>([]);
+  const [selectedSiblingIds, setSelectedSiblingIds] = useState<string[]>([]);
   const { addMember, updateMember } = useTreeStore();
 
   const {
@@ -88,6 +89,7 @@ export function AddMemberDialog({
       setPhotoUrl(undefined);
       setSelectedSpouseId(undefined);
       setSelectedChildrenIds([]);
+      setSelectedSiblingIds([]);
     }
   }, [open, reset, treeId]);
 
@@ -146,6 +148,14 @@ export function AddMemberDialog({
     return true;
   });
 
+  // Filter potential siblings (exclude parents, spouse, children)
+  const potentialSiblings = existingMembers.filter(m => {
+    if (m.id === parentId || m.id === secondParentId) return false;
+    if (m.id === selectedSpouseId) return false;
+    if (selectedChildrenIds.includes(m.id)) return false;
+    return true;
+  });
+
   // Reset form when dialog closes
   const resetForm = () => {
     reset({
@@ -155,6 +165,7 @@ export function AddMemberDialog({
     setPhotoUrl(undefined);
     setSelectedSpouseId(undefined);
     setSelectedChildrenIds([]);
+    setSelectedSiblingIds([]);
   };
 
   const onSubmit = async (data: CreateMemberInput) => {
@@ -251,6 +262,36 @@ export function AddMemberDialog({
         }
       }
 
+      // Update siblings to share same parents
+      const finalParentId = data.parentId;
+      const finalSecondParentId = data.secondParentId;
+
+      for (const siblingId of selectedSiblingIds) {
+        const sibling = existingMembers.find(m => m.id === siblingId);
+        if (!sibling) continue;
+
+        const siblingUpdateData: { parentId?: string | null; secondParentId?: string | null } = {};
+
+        // Assign this member's parents to the sibling
+        if (finalParentId && sibling.parentId !== finalParentId) {
+          siblingUpdateData.parentId = finalParentId;
+        }
+        if (finalSecondParentId && sibling.secondParentId !== finalSecondParentId) {
+          siblingUpdateData.secondParentId = finalSecondParentId;
+        }
+
+        if (Object.keys(siblingUpdateData).length > 0) {
+          const updateResponse = await apiWithAuth<FamilyMember>(
+            `/members/${siblingId}`,
+            accessToken,
+            { method: 'PUT', body: siblingUpdateData }
+          );
+          if (updateResponse.success) {
+            updateMember(siblingId, { ...sibling, ...updateResponse.data });
+          }
+        }
+      }
+
       toast.success('Family member added successfully');
       onOpenChange(false);
       resetForm();
@@ -266,6 +307,14 @@ export function AddMemberDialog({
       prev.includes(childId)
         ? prev.filter(id => id !== childId)
         : [...prev, childId]
+    );
+  };
+
+  const toggleSiblingSelection = (siblingId: string) => {
+    setSelectedSiblingIds(prev =>
+      prev.includes(siblingId)
+        ? prev.filter(id => id !== siblingId)
+        : [...prev, siblingId]
     );
   };
 
@@ -494,6 +543,54 @@ export function AddMemberDialog({
                 {selectedChildrenIds.length > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {selectedChildrenIds.length} child{selectedChildrenIds.length !== 1 ? 'ren' : ''} selected
+                  </p>
+                )}
+              </div>
+
+              {/* Siblings */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Siblings (share same parents)
+                </Label>
+                {potentialSiblings.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-white dark:bg-slate-800 rounded border">
+                    {potentialSiblings.map((m) => {
+                      const isSelected = selectedSiblingIds.includes(m.id);
+                      const sharesFather = parentId && m.parentId === parentId;
+                      const sharesMother = secondParentId && m.secondParentId === secondParentId;
+                      const isCurrentSibling = sharesFather || sharesMother;
+
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => toggleSiblingSelection(m.id)}
+                          className={`
+                            flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors cursor-pointer
+                            ${isSelected
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border-slate-200 dark:border-slate-600'
+                            }
+                          `}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${m.gender === 'male' ? 'bg-blue-500' : m.gender === 'female' ? 'bg-pink-500' : 'bg-purple-500'}`}></span>
+                          {m.firstName} {m.lastName}
+                          {isCurrentSibling && !isSelected && ' ✓'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic p-2">No available members to add as siblings</p>
+                )}
+                {selectedSiblingIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedSiblingIds.length} sibling{selectedSiblingIds.length !== 1 ? 's' : ''} selected
+                  </p>
+                )}
+                {(parentId || secondParentId) && selectedSiblingIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Siblings will share the same parents when saved
                   </p>
                 )}
               </div>

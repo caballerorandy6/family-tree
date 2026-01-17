@@ -8,13 +8,6 @@ import { updateMemberSchema, type UpdateMemberInput } from '@familytree/validati
 import type { FamilyMemberWithRelations, FamilyMember } from '@familytree/types/member.types';
 import { apiWithAuth } from '@/lib/api';
 import { useTreeStore } from '@/stores/treeStore';
-import {
-  runAllValidations,
-  getValidParentOptions,
-  getMemberDisplayInfo,
-  areSpouses,
-  getSpousesOf,
-} from '@/lib/familyValidations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,41 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PhotoUpload } from '@/components/tree/PhotoUpload';
-import { Loader2, AlertTriangle, AlertCircle } from 'lucide-react';
-
-const RELATIONSHIP_OPTIONS = [
-  // Great-great-grandparents (tatarabuelos)
-  'great-great-grandfather', 'great-great-grandmother',
-  // Great-grandparents (bisabuelos)
-  'great-grandfather', 'great-grandmother',
-  // Grandparents (abuelos)
-  'grandfather', 'grandmother',
-  // Parents (padres)
-  'father', 'mother',
-  // Siblings (hermanos)
-  'brother', 'sister', 'half-brother', 'half-sister',
-  // Spouse (cónyuge)
-  'spouse',
-  // Children (hijos)
-  'son', 'daughter', 'stepson', 'stepdaughter',
-  // Grandchildren (nietos)
-  'grandson', 'granddaughter',
-  // Great-grandchildren (bisnietos)
-  'great-grandson', 'great-granddaughter',
-  // Great-great-grandchildren (tataranietos)
-  'great-great-grandson', 'great-great-granddaughter',
-  // Extended family
-  'uncle', 'aunt', 'nephew', 'niece', 'cousin',
-  // Other
-  'other',
-] as const;
+import { Loader2 } from 'lucide-react';
 
 const GENDER_OPTIONS = ['male', 'female', 'other'] as const;
-
-// Relationships that are half-siblings
-const HALF_SIBLING_RELATIONSHIPS = ['half-brother', 'half-sister'] as const;
 
 interface EditMemberDialogProps {
   member: FamilyMemberWithRelations;
@@ -83,23 +45,18 @@ export function EditMemberDialog({
   treeId,
 }: EditMemberDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(member.photoUrl ?? undefined);
   const [selectedSpouseId, setSelectedSpouseId] = useState<string | undefined>(member.spouseId ?? undefined);
+  const [selectedChildrenIds, setSelectedChildrenIds] = useState<string[]>([]);
+  const [selectedSiblingIds, setSelectedSiblingIds] = useState<string[]>([]);
   const { updateMember, setSelectedMember } = useTreeStore();
-
-  // Sync photoUrl and spouseId when member changes
-  useEffect(() => {
-    setPhotoUrl(member.photoUrl ?? undefined);
-    setSelectedSpouseId(member.spouseId ?? undefined);
-  }, [member.photoUrl, member.spouseId]);
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<UpdateMemberInput>({
     resolver: zodResolver(updateMemberSchema),
@@ -112,7 +69,6 @@ export function EditMemberDialog({
       deathPlace: member.deathPlace ?? undefined,
       occupation: member.occupation ?? undefined,
       biography: member.biography ?? undefined,
-      relationship: member.relationship as typeof RELATIONSHIP_OPTIONS[number],
       gender: member.gender as typeof GENDER_OPTIONS[number] | undefined,
       generation: member.generation,
       parentId: member.parentId ?? undefined,
@@ -120,82 +76,139 @@ export function EditMemberDialog({
     },
   });
 
-  const relationship = watch('relationship');
   const gender = watch('gender');
   const parentId = watch('parentId');
   const secondParentId = watch('secondParentId');
-  const generation = watch('generation');
 
-  // Check if this is a half-sibling
-  const isHalfSibling = HALF_SIBLING_RELATIONSHIPS.includes(
-    relationship as typeof HALF_SIBLING_RELATIONSHIPS[number]
-  );
+  // Sync state when member changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setPhotoUrl(member.photoUrl ?? undefined);
+      setSelectedSpouseId(member.spouseId ?? undefined);
 
-  // Get valid parent options (filtered to prevent circular relationships)
-  const validParentOptions = getValidParentOptions(member.id, existingMembers);
+      // Get current children (members who have this member as parent)
+      const currentChildren = existingMembers.filter(
+        m => m.parentId === member.id || m.secondParentId === member.id
+      ).map(m => m.id);
+      setSelectedChildrenIds(currentChildren);
 
-  // Get valid second parent options (exclude first parent and spouses for half-siblings)
-  const validSecondParentOptions = (() => {
-    if (!parentId) return validParentOptions;
+      // Get current siblings (members who share at least one parent)
+      const currentSiblings = existingMembers.filter(m => {
+        if (m.id === member.id) return false;
+        const sharesFather = member.parentId && m.parentId === member.parentId;
+        const sharesMother = member.secondParentId && m.secondParentId === member.secondParentId;
+        return sharesFather || sharesMother;
+      }).map(m => m.id);
+      setSelectedSiblingIds(currentSiblings);
 
-    let options = validParentOptions.filter(m => m.id !== parentId);
-
-    // For half-siblings, exclude existing spouses of first parent
-    // (if they have children together, this person would be a full sibling, not half)
-    if (isHalfSibling) {
-      const existingSpouseIds = getSpousesOf(parentId, existingMembers).map(s => s.id);
-      options = options.filter(m => !existingSpouseIds.includes(m.id));
+      // Reset form with member data
+      reset({
+        firstName: member.firstName,
+        lastName: member.lastName,
+        birthYear: member.birthYear,
+        deathYear: member.deathYear ?? undefined,
+        birthPlace: member.birthPlace ?? undefined,
+        deathPlace: member.deathPlace ?? undefined,
+        occupation: member.occupation ?? undefined,
+        biography: member.biography ?? undefined,
+        gender: member.gender as typeof GENDER_OPTIONS[number] | undefined,
+        generation: member.generation,
+        parentId: member.parentId ?? undefined,
+        secondParentId: member.secondParentId ?? undefined,
+      });
     }
+  }, [open, member, existingMembers, reset]);
 
-    return options;
-  })();
+  // Get males and females from existing members (excluding self)
+  const maleMembers = existingMembers.filter(m => m.gender === 'male' && m.id !== member.id);
+  const femaleMembers = existingMembers.filter(m => m.gender === 'female' && m.id !== member.id);
 
-  const birthYear = watch('birthYear');
+  // Filter potential fathers (males not selected as children, not self)
+  const potentialFathers = maleMembers.filter(m => !selectedChildrenIds.includes(m.id));
 
-  // Get potential spouses (exclude self, parents, children)
+  // Filter potential mothers (females not selected as children, not self)
+  const potentialMothers = femaleMembers.filter(m => !selectedChildrenIds.includes(m.id));
+
+  // Filter potential spouses (exclude self, parents, children)
   const potentialSpouses = existingMembers.filter(m => {
-    if (m.id === member.id) return false; // Exclude self
-    if (m.id === parentId || m.id === secondParentId) return false; // Exclude parents
-    if (m.parentId === member.id || m.secondParentId === member.id) return false; // Exclude children
+    if (m.id === member.id) return false;
+    if (m.id === parentId || m.id === secondParentId) return false;
+    if (selectedChildrenIds.includes(m.id)) return false;
     return true;
   });
 
-  // Run validations when parents or birth year change
-  useEffect(() => {
-    const { errors, warnings } = runAllValidations(
-      member.id,
-      parentId ?? undefined,
-      secondParentId ?? undefined,
-      generation ?? member.generation,
-      existingMembers,
-      isHalfSibling,
-      birthYear
-    );
-    setValidationErrors(errors);
-    setValidationWarnings(warnings);
-  }, [member.id, parentId, secondParentId, generation, existingMembers, isHalfSibling, member.generation, birthYear]);
+  // Filter potential children (exclude self, parents, spouse, and those with 2 parents already unless one is this member)
+  const potentialChildren = existingMembers.filter(m => {
+    if (m.id === member.id) return false;
+    if (m.id === parentId || m.id === secondParentId) return false;
+    if (m.id === selectedSpouseId) return false;
 
-  // Clear second parent if first parent is cleared
+    // Check if member already has 2 parents (and neither is this member)
+    const hasThisAsParent = m.parentId === member.id || m.secondParentId === member.id;
+    const hasFullParents = m.parentId && m.secondParentId;
+    if (hasFullParents && !hasThisAsParent) return false;
+
+    return true;
+  });
+
+  // Filter potential siblings (exclude self, parents, spouse, children, same generation)
+  const potentialSiblings = existingMembers.filter(m => {
+    if (m.id === member.id) return false;
+    if (m.id === parentId || m.id === secondParentId) return false;
+    if (m.id === selectedSpouseId) return false;
+    if (selectedChildrenIds.includes(m.id)) return false;
+    return true;
+  });
+
+  // Calculate generation based on parents or children
   useEffect(() => {
-    if (!parentId && secondParentId) {
-      setValue('secondParentId', undefined);
+    if (parentId) {
+      const parent = existingMembers.find(m => m.id === parentId);
+      if (parent) {
+        setValue('generation', (parent.generation ?? 0) + 1);
+      }
+    } else if (selectedChildrenIds.length > 0) {
+      const firstChild = existingMembers.find(m => m.id === selectedChildrenIds[0]);
+      if (firstChild) {
+        setValue('generation', (firstChild.generation ?? 0) - 1);
+      }
+    } else if (selectedSpouseId) {
+      const spouse = existingMembers.find(m => m.id === selectedSpouseId);
+      if (spouse) {
+        setValue('generation', spouse.generation ?? 0);
+      }
     }
-  }, [parentId, secondParentId, setValue]);
+  }, [parentId, selectedChildrenIds, selectedSpouseId, existingMembers, setValue]);
+
+  const toggleChildSelection = (childId: string) => {
+    setSelectedChildrenIds(prev =>
+      prev.includes(childId)
+        ? prev.filter(id => id !== childId)
+        : [...prev, childId]
+    );
+  };
+
+  const toggleSiblingSelection = (siblingId: string) => {
+    setSelectedSiblingIds(prev =>
+      prev.includes(siblingId)
+        ? prev.filter(id => id !== siblingId)
+        : [...prev, siblingId]
+    );
+  };
 
   const onSubmit = async (data: UpdateMemberInput) => {
-    // Check for validation errors before submitting
-    if (validationErrors.length > 0) {
-      toast.error(validationErrors[0]);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
       const oldSpouseId = member.spouseId;
       const newSpouseId = selectedSpouseId;
 
-      // Update the member with the new data including spouse
+      // Get current children before update
+      const oldChildrenIds = existingMembers
+        .filter(m => m.parentId === member.id || m.secondParentId === member.id)
+        .map(m => m.id);
+
+      // Update the member
       const response = await apiWithAuth<FamilyMember>(`/members/${member.id}`, accessToken, {
         method: 'PUT',
         body: {
@@ -217,7 +230,6 @@ export function EditMemberDialog({
       updateMember(member.id, updatedMember);
 
       // Handle bidirectional spouse relationship
-      // 1. If old spouse exists and is different from new spouse, remove this member as their spouse
       if (oldSpouseId && oldSpouseId !== newSpouseId) {
         const oldSpouse = existingMembers.find(m => m.id === oldSpouseId);
         if (oldSpouse && oldSpouse.spouseId === member.id) {
@@ -232,11 +244,9 @@ export function EditMemberDialog({
         }
       }
 
-      // 2. If new spouse exists, set this member as their spouse
       if (newSpouseId) {
         const newSpouse = existingMembers.find(m => m.id === newSpouseId);
         if (newSpouse && newSpouse.spouseId !== member.id) {
-          // First clear the new spouse's old spouse if exists
           if (newSpouse.spouseId) {
             const theirOldSpouse = existingMembers.find(m => m.id === newSpouse.spouseId);
             if (theirOldSpouse && theirOldSpouse.spouseId === newSpouseId) {
@@ -250,8 +260,6 @@ export function EditMemberDialog({
               }
             }
           }
-
-          // Now set this member as their spouse
           const updateResponse = await apiWithAuth<FamilyMember>(
             `/members/${newSpouseId}`,
             accessToken,
@@ -259,6 +267,100 @@ export function EditMemberDialog({
           );
           if (updateResponse.success) {
             updateMember(newSpouseId, { ...newSpouse, ...updateResponse.data, spouseId: member.id });
+          }
+        }
+      }
+
+      // Handle children updates
+      // Remove this member as parent from children that were deselected
+      const removedChildren = oldChildrenIds.filter(id => !selectedChildrenIds.includes(id));
+      for (const childId of removedChildren) {
+        const child = existingMembers.find(m => m.id === childId);
+        if (!child) continue;
+
+        const updateData: { parentId?: string | null; secondParentId?: string | null } = {};
+        if (child.parentId === member.id) {
+          updateData.parentId = null;
+        }
+        if (child.secondParentId === member.id) {
+          updateData.secondParentId = null;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          const updateResponse = await apiWithAuth<FamilyMember>(
+            `/members/${childId}`,
+            accessToken,
+            { method: 'PUT', body: updateData }
+          );
+          if (updateResponse.success) {
+            updateMember(childId, { ...child, ...updateResponse.data });
+          }
+        }
+      }
+
+      // Add this member as parent to newly selected children
+      const addedChildren = selectedChildrenIds.filter(id => !oldChildrenIds.includes(id));
+      for (const childId of addedChildren) {
+        const child = existingMembers.find(m => m.id === childId);
+        if (!child) continue;
+
+        const updateData: { parentId?: string; secondParentId?: string } = {};
+        if (!child.parentId) {
+          updateData.parentId = member.id;
+        } else if (!child.secondParentId) {
+          updateData.secondParentId = member.id;
+        } else {
+          continue; // Child already has two parents
+        }
+
+        const updateResponse = await apiWithAuth<FamilyMember>(
+          `/members/${childId}`,
+          accessToken,
+          { method: 'PUT', body: updateData }
+        );
+        if (updateResponse.success) {
+          updateMember(childId, { ...child, ...updateResponse.data });
+        }
+      }
+
+      // Handle siblings updates - siblings share the same parents
+      const finalParentId = data.parentId;
+      const finalSecondParentId = data.secondParentId;
+
+      // Get current siblings before update
+      const oldSiblingIds = existingMembers
+        .filter(m => {
+          if (m.id === member.id) return false;
+          const sharesFather = member.parentId && m.parentId === member.parentId;
+          const sharesMother = member.secondParentId && m.secondParentId === member.secondParentId;
+          return sharesFather || sharesMother;
+        })
+        .map(m => m.id);
+
+      // For newly added siblings, assign same parents
+      const addedSiblings = selectedSiblingIds.filter(id => !oldSiblingIds.includes(id));
+      for (const siblingId of addedSiblings) {
+        const sibling = existingMembers.find(m => m.id === siblingId);
+        if (!sibling) continue;
+
+        const siblingUpdateData: { parentId?: string | null; secondParentId?: string | null } = {};
+
+        // Assign this member's parents to the sibling
+        if (finalParentId && sibling.parentId !== finalParentId) {
+          siblingUpdateData.parentId = finalParentId;
+        }
+        if (finalSecondParentId && sibling.secondParentId !== finalSecondParentId) {
+          siblingUpdateData.secondParentId = finalSecondParentId;
+        }
+
+        if (Object.keys(siblingUpdateData).length > 0) {
+          const updateResponse = await apiWithAuth<FamilyMember>(
+            `/members/${siblingId}`,
+            accessToken,
+            { method: 'PUT', body: siblingUpdateData }
+          );
+          if (updateResponse.success) {
+            updateMember(siblingId, { ...sibling, ...updateResponse.data });
           }
         }
       }
@@ -278,22 +380,27 @@ export function EditMemberDialog({
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Family Member</DialogTitle>
-          <DialogDescription>Update the information for {member.firstName} {member.lastName}.</DialogDescription>
+          <DialogDescription>
+            Update the information for {member.firstName} {member.lastName}.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Basic info */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="firstName">First Name *</Label>
               <Input id="firstName" {...register('firstName')} disabled={isLoading} />
-              {errors.firstName ? <p className="text-sm text-destructive">{errors.firstName.message}</p> : null}
+              {errors.firstName && <p className="text-sm text-destructive">{errors.firstName.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label htmlFor="lastName">Last Name *</Label>
               <Input id="lastName" {...register('lastName')} disabled={isLoading} />
-              {errors.lastName ? <p className="text-sm text-destructive">{errors.lastName.message}</p> : null}
+              {errors.lastName && <p className="text-sm text-destructive">{errors.lastName.message}</p>}
             </div>
           </div>
 
+          {/* Photo upload */}
           <PhotoUpload
             treeId={treeId}
             accessToken={accessToken}
@@ -302,208 +409,275 @@ export function EditMemberDialog({
             disabled={isLoading}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Birth Year</Label>
-              <DatePicker
-                value={watch('birthYear')}
-                onChange={(year) => setValue('birthYear', year ?? 0)}
-                placeholder="Select birth year"
-                disabled={isLoading}
-              />
-              {errors.birthYear ? <p className="text-sm text-destructive">{errors.birthYear.message}</p> : null}
-            </div>
-            <div className="space-y-2">
-              <Label>Death Year (optional)</Label>
-              <DatePicker
-                value={watch('deathYear') ?? undefined}
-                onChange={(year) => setValue('deathYear', year)}
-                placeholder="Select death year"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Relationship</Label>
-              <Select
-                value={relationship}
-                onValueChange={(value) => setValue('relationship', value as typeof RELATIONSHIP_OPTIONS[number])}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select relationship" />
-                </SelectTrigger>
-                <SelectContent>
-                  {RELATIONSHIP_OPTIONS.map((rel) => (
-                    <SelectItem key={rel} value={rel} className="capitalize">
-                      {rel.replace(/-/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Gender</Label>
-              <Select
-                value={gender ?? '__none__'}
-                onValueChange={(value) => setValue('gender', value === '__none__' ? undefined : value as typeof GENDER_OPTIONS[number])}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Not specified</SelectItem>
-                  {GENDER_OPTIONS.map((g) => (
-                    <SelectItem key={g} value={g} className="capitalize">
-                      {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Spouse Selector */}
+          {/* Gender */}
           <div className="space-y-2">
-            <Label>Spouse / Partner</Label>
+            <Label>Gender</Label>
             <Select
-              value={selectedSpouseId ?? '__none__'}
-              onValueChange={(value) => setSelectedSpouseId(value === '__none__' ? undefined : value)}
+              value={gender ?? '__none__'}
+              onValueChange={(value) => setValue('gender', value === '__none__' ? undefined : value as typeof GENDER_OPTIONS[number])}
               disabled={isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select spouse" />
+                <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
-                {potentialSpouses.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    <span className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${m.gender === 'male' ? 'bg-blue-500' : m.gender === 'female' ? 'bg-pink-500' : 'bg-purple-500'}`}></span>
-                      {m.firstName} {m.lastName} ({m.birthYear})
-                      {m.spouseId && m.spouseId !== member.id && ' - Has spouse'}
-                    </span>
-                  </SelectItem>
-                ))}
+                <SelectItem value="__none__">Not specified</SelectItem>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {validParentOptions.length > 0 ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>First Parent</Label>
+          {/* Birth/Death years */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Birth Year *</Label>
+              <DatePicker
+                value={watch('birthYear')}
+                onChange={(year) => setValue('birthYear', year ?? 0)}
+                placeholder="Select year"
+                disabled={isLoading}
+              />
+              {errors.birthYear && <p className="text-sm text-destructive">{errors.birthYear.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Death Year</Label>
+              <DatePicker
+                value={watch('deathYear') ?? undefined}
+                onChange={(year) => setValue('deathYear', year)}
+                placeholder="(optional)"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          {/* Family Relationships Section */}
+          <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+            <h4 className="font-medium text-sm text-foreground">
+              Family Relationships
+            </h4>
+
+            {/* Parents - Father (male) and Mother (female) */}
+            <div className="space-y-3">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                Parents
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Father */}
+                <div className="space-y-1">
+                  <Label className="text-xs flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    Father
+                  </Label>
                   <Select
                     value={parentId ?? '__none__'}
                     onValueChange={(value) => setValue('parentId', value === '__none__' ? undefined : value)}
                     disabled={isLoading}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select parent" />
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select father" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">None</SelectItem>
-                      {validParentOptions.map((m) => (
+                      {potentialFathers.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
-                          {getMemberDisplayInfo(m, existingMembers)}
+                          {m.firstName} {m.lastName} ({m.birthYear})
                         </SelectItem>
                       ))}
+                      {potentialFathers.length === 0 && (
+                        <SelectItem value="__empty__" disabled>
+                          No male members available
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Second Parent</Label>
+
+                {/* Mother */}
+                <div className="space-y-1">
+                  <Label className="text-xs flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+                    Mother
+                  </Label>
                   <Select
                     value={secondParentId ?? '__none__'}
                     onValueChange={(value) => setValue('secondParentId', value === '__none__' ? undefined : value)}
-                    disabled={isLoading || !parentId}
+                    disabled={isLoading}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder={parentId ? 'Select parent' : 'Select first parent first'} />
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select mother" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">None</SelectItem>
-                      {validSecondParentOptions.map((m) => {
-                        const isExistingSpouse = parentId ? areSpouses(parentId, m.id, existingMembers) : false;
-                        const firstParent = parentId ? existingMembers.find(p => p.id === parentId) : null;
-                        const isSameGen = firstParent ? firstParent.generation === m.generation : true;
-                        return (
-                          <SelectItem key={m.id} value={m.id}>
-                            {getMemberDisplayInfo(m, existingMembers)}
-                            {isExistingSpouse ? ' ✓' : ''}
-                            {!isSameGen ? ' ⚠️ diff gen' : ''}
-                          </SelectItem>
-                        );
-                      })}
+                      {potentialMothers.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.firstName} {m.lastName} ({m.birthYear})
+                        </SelectItem>
+                      ))}
+                      {potentialMothers.length === 0 && (
+                        <SelectItem value="__empty__" disabled>
+                          No female members available
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
-          ) : null}
 
-          {/* Validation Errors */}
-          {validationErrors.length > 0 ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {validationErrors.map((error, i) => (
-                  <p key={i}>{error}</p>
-                ))}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          {/* Validation Warnings */}
-          {validationWarnings.length > 0 && validationErrors.length === 0 ? (
-            <Alert variant="default" className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                {validationWarnings.map((warning, i) => (
-                  <p key={i} className="text-sm">{warning}</p>
-                ))}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <div className="space-y-2">
-            <Label htmlFor="generation">Generation</Label>
-            <Input
-              id="generation"
-              type="number"
-              {...register('generation', { valueAsNumber: true })}
-              disabled={isLoading}
-            />
-            <p className="text-xs text-muted-foreground">
-              Lower = older generation. Adjust if needed.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+            {/* Spouse */}
             <div className="space-y-2">
-              <Label htmlFor="birthPlace">Birth Place</Label>
-              <Input id="birthPlace" {...register('birthPlace')} disabled={isLoading} />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                Spouse / Partner
+              </Label>
+              <Select
+                value={selectedSpouseId ?? '__none__'}
+                onValueChange={(value) => setSelectedSpouseId(value === '__none__' ? undefined : value)}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select spouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {potentialSpouses.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <span className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${m.gender === 'male' ? 'bg-blue-500' : m.gender === 'female' ? 'bg-pink-500' : 'bg-purple-500'}`}></span>
+                        {m.firstName} {m.lastName} ({m.birthYear})
+                        {m.spouseId && m.spouseId !== member.id && ' - Has spouse'}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {/* Children */}
             <div className="space-y-2">
-              <Label htmlFor="occupation">Occupation</Label>
-              <Input id="occupation" {...register('occupation')} disabled={isLoading} />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                Children
+              </Label>
+              {potentialChildren.length > 0 ? (
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-white dark:bg-slate-800 rounded border">
+                  {potentialChildren.map((m) => {
+                    const isSelected = selectedChildrenIds.includes(m.id);
+                    const hasThisAsParent = m.parentId === member.id || m.secondParentId === member.id;
+                    const parentCount = (m.parentId ? 1 : 0) + (m.secondParentId ? 1 : 0);
+                    const canAddParent = parentCount < 2 || hasThisAsParent;
+
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => canAddParent && toggleChildSelection(m.id)}
+                        disabled={!canAddParent && !isSelected}
+                        className={`
+                          flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors cursor-pointer
+                          ${isSelected
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : canAddParent
+                              ? 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border-slate-200 dark:border-slate-600'
+                              : 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800'
+                          }
+                        `}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${m.gender === 'male' ? 'bg-blue-500' : m.gender === 'female' ? 'bg-pink-500' : 'bg-purple-500'}`}></span>
+                        {m.firstName} {m.lastName}
+                        {!hasThisAsParent && parentCount === 1 && ' (1 parent)'}
+                        {!hasThisAsParent && parentCount === 2 && ' (full)'}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic p-2">No available members to add as children</p>
+              )}
+              {selectedChildrenIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedChildrenIds.length} child{selectedChildrenIds.length !== 1 ? 'ren' : ''} selected
+                </p>
+              )}
+            </div>
+
+            {/* Siblings */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                Siblings (share same parents)
+              </Label>
+              {potentialSiblings.length > 0 ? (
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-white dark:bg-slate-800 rounded border">
+                  {potentialSiblings.map((m) => {
+                    const isSelected = selectedSiblingIds.includes(m.id);
+                    const sharesFather = parentId && m.parentId === parentId;
+                    const sharesMother = secondParentId && m.secondParentId === secondParentId;
+                    const isCurrentSibling = sharesFather || sharesMother;
+
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => toggleSiblingSelection(m.id)}
+                        className={`
+                          flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors cursor-pointer
+                          ${isSelected
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border-slate-200 dark:border-slate-600'
+                          }
+                        `}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${m.gender === 'male' ? 'bg-blue-500' : m.gender === 'female' ? 'bg-pink-500' : 'bg-purple-500'}`}></span>
+                        {m.firstName} {m.lastName}
+                        {isCurrentSibling && !isSelected && ' ✓'}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic p-2">No available members to add as siblings</p>
+              )}
+              {selectedSiblingIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedSiblingIds.length} sibling{selectedSiblingIds.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
+              {(parentId || secondParentId) && selectedSiblingIds.length > 0 && (
+                <p className="text-xs text-muted-foreground italic">
+                  Siblings will share the same parents when saved
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="biography">Biography</Label>
-            <Textarea id="biography" {...register('biography')} disabled={isLoading} />
-          </div>
+          {/* Optional fields */}
+          <details className="group">
+            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+              Additional information (optional)
+            </summary>
+            <div className="mt-3 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="birthPlace">Birth Place</Label>
+                  <Input id="birthPlace" {...register('birthPlace')} disabled={isLoading} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="occupation">Occupation</Label>
+                  <Input id="occupation" {...register('occupation')} disabled={isLoading} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="biography">Biography</Label>
+                <Textarea id="biography" {...register('biography')} disabled={isLoading} />
+              </div>
+            </div>
+          </details>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || validationErrors.length > 0}>
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
