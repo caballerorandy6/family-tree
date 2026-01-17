@@ -56,15 +56,15 @@ function getGenderColors(gender?: string) {
 
 // Card dimensions - larger and more spacious
 const CARD_CONFIG = {
-  singleWidth: 220,
-  coupleWidth: 420,
-  cardHeight: 180,
-  avatarSize: 64,
-  borderRadius: 16,
-  nameFontSize: 16,
-  lastNameFontSize: 14,
-  lifespanFontSize: 12,
-  initialsFontSize: 20,
+  singleWidth: 260,
+  coupleWidth: 500,
+  cardHeight: 220,
+  avatarSize: 76,
+  borderRadius: 20,
+  nameFontSize: 19,
+  lastNameFontSize: 16,
+  lifespanFontSize: 14,
+  initialsFontSize: 24,
 };
 
 function renderCustomNode(
@@ -140,7 +140,7 @@ function renderCustomNode(
 
       {/* Primary member section */}
       <g
-        transform={hasAttachedSpouse ? `translate(${cardX + 105}, 0)` : 'translate(0, 0)'}
+        transform={hasAttachedSpouse ? `translate(${cardX + 130}, 0)` : 'translate(0, 0)'}
         style={{ cursor: 'pointer' }}
         onClick={(e) => {
           e.stopPropagation();
@@ -184,7 +184,7 @@ function renderCustomNode(
               fontSize={initialsFontSize}
               fontWeight={500}
               fill={colors.text}
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               {data.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </text>
@@ -198,7 +198,7 @@ function renderCustomNode(
           fontSize={nameFontSize}
           fontWeight={500}
           fill="#334155"
-          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {member?.firstName || data.name.split(' ')[0]}
         </text>
@@ -210,7 +210,7 @@ function renderCustomNode(
           fontSize={lastNameFontSize}
           fontWeight={400}
           fill="#64748b"
-          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {member?.lastName || data.name.split(' ')[1] || ''}
         </text>
@@ -221,7 +221,7 @@ function renderCustomNode(
           textAnchor="middle"
           fontSize={lifespanFontSize}
           fill="#94a3b8"
-          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {isDeceased ? '✝ ' : ''}{lifespan}
         </text>
@@ -231,14 +231,14 @@ function renderCustomNode(
       {hasAttachedSpouse && firstSpouse && firstSpouseColors && (
         <>
           {/* Heart connector - larger */}
-          <g transform="translate(0, -5)">
-            <circle cx={0} cy={0} r={20} fill="#fdf2f8" stroke="#fbcfe8" strokeWidth={2} />
+          <g transform="translate(0, -10)">
+            <circle cx={0} cy={0} r={26} fill="#fdf2f8" stroke="#fbcfe8" strokeWidth={2} />
             <text
               x={0}
-              y={7}
+              y={9}
               textAnchor="middle"
               fill="#ec4899"
-              fontSize={22}
+              fontSize={28}
               className="heart-icon"
             >
               ♥
@@ -247,7 +247,7 @@ function renderCustomNode(
 
           {/* Spouse section */}
           <g
-            transform={`translate(${cardX + coupleWidth - 105}, 0)`}
+            transform={`translate(${cardX + coupleWidth - 130}, 0)`}
             style={{ cursor: 'pointer' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -289,7 +289,7 @@ function renderCustomNode(
                   fontSize={initialsFontSize}
                   fontWeight={500}
                   fill={firstSpouseColors.text}
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 >
                   {firstSpouse.firstName[0]}{firstSpouse.name.split(' ')[1]?.[0] || ''}
                 </text>
@@ -303,7 +303,7 @@ function renderCustomNode(
               fontSize={nameFontSize}
               fontWeight={500}
               fill="#334155"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               {firstSpouse.firstName}
             </text>
@@ -315,7 +315,7 @@ function renderCustomNode(
               fontSize={lastNameFontSize}
               fontWeight={400}
               fill="#64748b"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               {firstSpouse.name.split(' ')[1] || ''}
             </text>
@@ -326,7 +326,7 @@ function renderCustomNode(
               textAnchor="middle"
               fontSize={lifespanFontSize}
               fill="#94a3b8"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               b. {firstSpouse.birthYear}
             </text>
@@ -352,25 +352,26 @@ function renderCustomNode(
 
       {/* Indicator for spouse elsewhere in tree - LARGER */}
       {elsewhereSpouses.length > 0 && !hasAttachedSpouse && (
-        <g transform={`translate(${singleWidth / 2 + 15}, 0)`}>
+        <g transform={`translate(${singleWidth / 2 + 20}, 0)`}>
           <rect
-            x={-45}
-            y={-25}
-            width={90}
-            height={55}
-            rx={12}
+            x={-55}
+            y={-32}
+            width={110}
+            height={70}
+            rx={14}
             fill="#fef3c7"
             stroke="#fbbf24"
             strokeWidth={2}
             strokeDasharray="6,3"
           />
-          <text y={-2} textAnchor="middle" fill="#f59e0b" fontSize={20}>♥</text>
+          <text y={-4} textAnchor="middle" fill="#f59e0b" fontSize={26}>♥</text>
           <text
-            y={18}
+            y={22}
             textAnchor="middle"
             fill="#92400e"
-            fontSize={13}
+            fontSize={15}
             fontWeight={500}
+            style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
           >
             {elsewhereSpouses[0]?.firstName || 'Spouse'}
           </text>
@@ -555,8 +556,8 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
             }}
             zoom={zoom}
             onUpdate={({ zoom: newZoom }) => setZoom(newZoom)}
-            separation={{ siblings: 1.6, nonSiblings: 2 }}
-            nodeSize={{ x: 450, y: 240 }}
+            separation={{ siblings: 1.5, nonSiblings: 1.8 }}
+            nodeSize={{ x: 540, y: 280 }}
             pathClassFunc={() => 'tree-link'}
             enableLegacyTransitions
             transitionDuration={300}
