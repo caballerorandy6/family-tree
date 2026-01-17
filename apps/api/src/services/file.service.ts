@@ -2,7 +2,7 @@ import { prisma } from '@familytree/database';
 import sharp from 'sharp';
 import type { FileMetadata, SignedUrlResponse } from '@familytree/types/file.types';
 import type { FileCategory } from '@familytree/types/member.types';
-import { uploadFile, deleteFile, getSignedDownloadUrl } from '../config/storage';
+import { uploadFile, deleteFile } from '../config/storage';
 import { AppError } from '../middleware/error.middleware';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -156,10 +156,9 @@ export async function getFileDownloadUrl(
     throw new AppError(403, 'FORBIDDEN', 'You do not have access to this file');
   }
 
-  const url = await getSignedDownloadUrl(file.fileKey);
-  const expiresAt = Date.now() + 3600 * 1000; // 1 hour from now
-
-  return { url, expiresAt };
+  // Use the stored fileUrl directly since files are public on Cloudinary
+  // This is more reliable than regenerating the URL from fileKey
+  return { url: file.fileUrl, expiresAt: Date.now() + 3600 * 1000 };
 }
 
 // Upload profile photo (public, not tied to a member yet)

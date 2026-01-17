@@ -59,8 +59,12 @@ export async function uploadFile(
 }
 
 export async function deleteFile(fileKey: string): Promise<void> {
-  // Determine if it's an image or raw file based on the folder path
-  const resourceType = fileKey.includes('/profiles/') || fileKey.includes('/members/') ? 'image' : 'raw';
+  // Determine if it's an image or raw file
+  // Documents (pdf, doc, docx) are raw files, everything else in profiles/members is image
+  const isImage = fileKey.includes('/profiles/') ||
+    (fileKey.includes('/members/') && !fileKey.match(/\.(pdf|doc|docx)$/i));
+
+  const resourceType = isImage ? 'image' : 'raw';
 
   await cloudinary.uploader.destroy(fileKey, {
     resource_type: resourceType,
@@ -68,15 +72,20 @@ export async function deleteFile(fileKey: string): Promise<void> {
 }
 
 export async function getSignedDownloadUrl(fileKey: string): Promise<string> {
-  // For Cloudinary, we can generate a signed URL with expiration
-  const signedUrl = cloudinary.url(fileKey, {
+  // Determine resource type based on the folder path
+  // Images are in /profiles/ or /members/, documents are raw files
+  const isImage = fileKey.includes('/profiles/') ||
+    (fileKey.includes('/members/') && !fileKey.match(/\.(pdf|doc|docx)$/i));
+
+  const resourceType = isImage ? 'image' : 'raw';
+
+  // For public files, just return the secure URL
+  const url = cloudinary.url(fileKey, {
     secure: true,
-    sign_url: true,
-    type: 'authenticated',
-    expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+    resource_type: resourceType,
   });
 
-  return signedUrl;
+  return url;
 }
 
 // For profile photos, return the direct URL (public)
