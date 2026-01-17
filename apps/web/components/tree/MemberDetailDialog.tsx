@@ -250,16 +250,11 @@ export function MemberDetailDialog({
               <h2 className="text-2xl font-bold truncate">
                 {member.firstName} {member.lastName}
               </h2>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="capitalize">
-                  {member.relationship?.replace(/-/g, ' ') ?? 'Other'}
+              {member.gender && (
+                <Badge variant="outline" className="capitalize mt-1">
+                  {member.gender}
                 </Badge>
-                {member.gender && (
-                  <Badge variant="outline" className="capitalize">
-                    {member.gender}
-                  </Badge>
-                )}
-              </div>
+              )}
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <Button variant="outline" size="icon" onClick={() => setEditDialogOpen(true)}>

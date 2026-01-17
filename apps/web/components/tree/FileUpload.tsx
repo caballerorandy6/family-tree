@@ -96,6 +96,7 @@ export function FileUpload({ memberId, accessToken }: FileUploadProps) {
             files={files.map((f) => f.file)}
             onupdatefiles={setFiles}
             allowMultiple={false}
+            name="file"
             maxFileSize="10MB"
             acceptedFileTypes={ALLOWED_TYPES}
             labelIdle='Drag & drop your file or <span class="filepond--label-action">Browse</span>'

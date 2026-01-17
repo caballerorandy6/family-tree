@@ -264,19 +264,6 @@
   stroke-width: 4px;
 }
 
-/* React D3 Tree Container */
-.rd3t-tree-container {
-  background: transparent !important;
-}
-
-.rd3t-grabbable {
-  cursor: grab;
-}
-
-.rd3t-grabbable:active {
-  cursor: grabbing;
-}
-
 /* Node Group Animations */
 .tree-node-group {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -328,11 +315,6 @@
     transform: scale(1.15);
     opacity: 0.9;
   }
-}
-
-/* Smooth Zoom Transitions */
-.rd3t-tree-container svg {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Tree Container Custom Scrollbar */

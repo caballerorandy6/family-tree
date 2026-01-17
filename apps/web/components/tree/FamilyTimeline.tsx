@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import type { FamilyMemberWithRelations } from '@familytree/types/member.types';
 import type { FamilyTree } from '@familytree/types/tree.types';
@@ -9,17 +8,7 @@ import { useTreeStore } from '@/stores/treeStore';
 import { AddMemberDialog } from './AddMemberDialog';
 import { MemberDetailDialog } from './MemberDetailDialog';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Users } from 'lucide-react';
-
-// Dynamic import to avoid SSR issues
-const Chrono = dynamic(() => import('react-chrono').then(mod => mod.Chrono), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-[500px]">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
-    </div>
-  ),
-});
+import { UserPlus, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface FamilyTimelineProps {
   tree: FamilyTree;
@@ -41,102 +30,30 @@ function getGenderColors(gender?: string | null) {
 export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTimelineProps) {
   const { members, setMembers, setCurrentTree, selectedMember, setSelectedMember } = useTreeStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [mode, setMode] = useState<'HORIZONTAL' | 'VERTICAL' | 'VERTICAL_ALTERNATING'>('VERTICAL_ALTERNATING');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCurrentTree(tree);
     setMembers(initialMembers);
   }, [tree, initialMembers, setCurrentTree, setMembers]);
 
-  // Sort members by birth year
+  // Sort members by birth year (oldest first)
   const sortedMembers = [...members].sort((a, b) => a.birthYear - b.birthYear);
 
-  // Convert members to chrono items
-  const items = sortedMembers.map(member => {
-    const lifespan = member.deathYear
-      ? `${member.birthYear} - ${member.deathYear}`
-      : `Born ${member.birthYear}`;
+  // Get unique years
+  const uniqueYears = [...new Set(sortedMembers.map(m => m.birthYear))].sort((a, b) => a - b);
 
-    return {
-      title: member.birthYear.toString(),
-      cardTitle: `${member.firstName} ${member.lastName}`,
-      cardSubtitle: lifespan,
-      cardDetailedText: member.occupation || member.relationship || '',
-    };
-  });
+  // Scroll functions
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -300 : 300,
+        behavior: 'smooth',
+      });
+    }
+  };
 
-  // Custom content for each card
-  const customContent = sortedMembers.map(member => {
-    const colors = getGenderColors(member.gender);
-
-    return (
-      <div
-        key={member.id}
-        className="flex flex-col items-center p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
-        onClick={() => setSelectedMember(member)}
-      >
-        {/* Avatar */}
-        <div
-          className="rounded-full overflow-hidden shadow-lg mb-3"
-          style={{
-            width: 80,
-            height: 80,
-            backgroundColor: colors.bg,
-            border: `3px solid ${colors.border}`,
-          }}
-        >
-          {member.photoUrl ? (
-            <Image
-              src={member.photoUrl}
-              alt={`${member.firstName} ${member.lastName}`}
-              width={80}
-              height={80}
-              className="object-cover w-full h-full"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span
-                className="text-2xl font-medium"
-                style={{ color: colors.text, fontFamily: 'Inter, system-ui, sans-serif' }}
-              >
-                {member.firstName[0]}{member.lastName[0]}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Name */}
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-          {member.firstName} {member.lastName}
-        </h3>
-
-        {/* Lifespan */}
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {member.deathYear ? `${member.birthYear} - ${member.deathYear}` : `Born ${member.birthYear}`}
-          {member.deathYear && <span className="ml-1">✝</span>}
-        </p>
-
-        {/* Occupation/Relationship */}
-        {(member.occupation || member.relationship) && (
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 capitalize">
-            {member.occupation || member.relationship}
-          </p>
-        )}
-
-        {/* Spouse indicator */}
-        {member.spouseId && (
-          <div className="flex items-center gap-1 mt-2 text-pink-500">
-            <span>♥</span>
-            <span className="text-xs">Has spouse</span>
-          </div>
-        )}
-
-        {/* Click hint */}
-        <p className="text-xs text-primary mt-3">Click for details</p>
-      </div>
-    );
-  });
-
+  // Empty state
   if (members.length === 0) {
     return (
       <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -167,117 +84,134 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
     );
   }
 
-  // Calculate year range
-  const years = members.map(m => m.birthYear);
-  const minYear = Math.min(...years);
-  const maxYear = Math.max(...years);
+  const minYear = uniqueYears[0] ?? new Date().getFullYear();
+  const maxYear = uniqueYears[uniqueYears.length - 1] ?? new Date().getFullYear();
 
   return (
-    <div className="space-y-5">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 border shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 shadow-inner">
-            <Users className="h-6 w-6 text-primary" />
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-slate-900 border shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Users className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-foreground">
-              {members.length} member{members.length !== 1 ? 's' : ''}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {minYear} – {maxYear}
-            </p>
+            <p className="font-semibold text-foreground">{members.length} members</p>
+            <p className="text-sm text-muted-foreground">{minYear} → {maxYear}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Mode selector */}
-          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border rounded-xl p-1.5 shadow-sm">
-            <Button
-              variant={mode === 'HORIZONTAL' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-8 px-3 text-xs"
-              onClick={() => setMode('HORIZONTAL')}
-            >
-              Horizontal
-            </Button>
-            <Button
-              variant={mode === 'VERTICAL_ALTERNATING' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-8 px-3 text-xs"
-              onClick={() => setMode('VERTICAL_ALTERNATING')}
-            >
-              Alternating
-            </Button>
-            <Button
-              variant={mode === 'VERTICAL' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-8 px-3 text-xs"
-              onClick={() => setMode('VERTICAL')}
-            >
-              Vertical
-            </Button>
-          </div>
-
-          <Button onClick={() => setAddDialogOpen(true)} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
-            <UserPlus className="mr-2 h-5 w-5" />
-            Add Member
-          </Button>
-        </div>
+        <Button onClick={() => setAddDialogOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Add Member
+        </Button>
       </div>
 
       {/* Timeline */}
-      <div className="rounded-2xl border shadow-lg overflow-hidden bg-white dark:bg-slate-900" style={{ minHeight: '600px' }}>
-        <Chrono
-          items={items}
-          mode={mode}
-          scrollable={{ scrollbar: true }}
-          cardHeight={220}
-          cardWidth={300}
-          contentDetailsHeight={100}
-          fontSizes={{
-            title: '1rem',
-            cardTitle: '1.1rem',
-            cardSubtitle: '0.9rem',
-            cardText: '0.85rem',
-          }}
-          theme={{
-            primary: '#3b82f6',
-            secondary: '#f1f5f9',
-            cardBgColor: '#ffffff',
-            titleColor: '#3b82f6',
-            titleColorActive: '#1d4ed8',
-          }}
-          useReadMore={false}
-          activeItemIndex={0}
+      <div className="relative rounded-xl border bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 shadow-lg">
+        {/* Navigation arrows */}
+        <button
+          onClick={() => scroll('left')}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg border flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
         >
-          {customContent}
-        </Chrono>
-      </div>
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg border flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-6 p-4 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Legend</span>
-        <div className="flex flex-wrap items-center gap-5">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-blue-100 border-2 border-blue-500" />
-            <span className="text-sm text-muted-foreground">Male</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-pink-100 border-2 border-pink-500" />
-            <span className="text-sm text-muted-foreground">Female</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-purple-100 border-2 border-purple-500" />
-            <span className="text-sm text-muted-foreground">Other</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-pink-500 text-sm">♥</span>
-            <span className="text-sm text-muted-foreground">Has Spouse</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 text-sm">✝</span>
-            <span className="text-sm text-muted-foreground">Deceased</span>
+        {/* Scrollable area */}
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto overflow-y-hidden px-16 py-10"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          <div className="relative" style={{ minWidth: uniqueYears.length * 160 + 150, height: 340 }}>
+
+            {/* Timeline line */}
+            <div className="absolute left-0 right-0 top-[220px] h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full shadow-sm" />
+
+            {/* Year markers and members */}
+            {uniqueYears.map((year, yearIndex) => {
+              const membersInYear = sortedMembers.filter(m => m.birthYear === year);
+              const xPosition = yearIndex * 140 + 50;
+
+              return (
+                <div
+                  key={year}
+                  className="absolute flex flex-col items-center"
+                  style={{ left: xPosition }}
+                >
+                  {/* Members for this year */}
+                  <div className="flex flex-col items-center gap-3 mb-6">
+                    {membersInYear.map((member, memberIndex) => {
+                      const colors = getGenderColors(member.gender);
+                      const offsetX = membersInYear.length > 1 ? (memberIndex - (membersInYear.length - 1) / 2) * 50 : 0;
+
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={() => setSelectedMember(member)}
+                          className="group relative focus:outline-none cursor-pointer"
+                          style={{ transform: `translateX(${offsetX}px)` }}
+                        >
+                          {/* Avatar */}
+                          <div
+                            className="w-20 h-20 rounded-full overflow-hidden shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl cursor-pointer"
+                            style={{
+                              backgroundColor: colors.bg,
+                              border: `3px solid ${colors.border}`,
+                            }}
+                          >
+                            {member.photoUrl ? (
+                              <Image
+                                src={member.photoUrl}
+                                alt={`${member.firstName} ${member.lastName}`}
+                                width={80}
+                                height={80}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-xl font-semibold" style={{ color: colors.text }}>
+                                  {member.firstName[0]}{member.lastName[0]}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Deceased indicator */}
+                          {member.deathYear && (
+                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-slate-600 rounded-full flex items-center justify-center text-white text-xs shadow">
+                              ✝
+                            </div>
+                          )}
+
+                          {/* Tooltip */}
+                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg z-20">
+                            {member.firstName} {member.lastName}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Connection line */}
+                  <div className="w-0.5 h-8 bg-gradient-to-b from-slate-300 to-slate-400 dark:from-slate-500 dark:to-slate-600" />
+
+                  {/* Year dot */}
+                  <div className="w-4 h-4 rounded-full bg-white dark:bg-slate-700 border-4 border-purple-500 shadow-md -mt-2" />
+
+                  {/* Year label */}
+                  <span className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {year}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
