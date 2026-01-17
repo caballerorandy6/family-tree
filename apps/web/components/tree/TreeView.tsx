@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -48,22 +48,16 @@ export function TreeView({ tree, initialMembers, accessToken }: TreeViewProps) {
   }, [tree, initialMembers, setCurrentTree, setMembers]);
 
   // Callback for selecting a member
-  const handleSelectMember = useCallback(
-    (member: FamilyMemberWithRelations) => {
-      setSelectedMember(member);
-    },
-    [setSelectedMember]
-  );
+  const handleSelectMember = (member: FamilyMemberWithRelations) => {
+    setSelectedMember(member);
+  };
 
   // Update nodes and edges when members change
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = createNodesAndEdges(members, handleSelectMember);
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [members, handleSelectMember, setNodes, setEdges]);
-
-  // Memoize node types to prevent unnecessary re-renders
-  const memoizedNodeTypes = useMemo(() => nodeTypes, []);
+  }, [members, setNodes, setEdges]);
 
   if (members.length === 0) {
     return (
@@ -106,7 +100,7 @@ export function TreeView({ tree, initialMembers, accessToken }: TreeViewProps) {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          nodeTypes={memoizedNodeTypes}
+          nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
           minZoom={0.1}

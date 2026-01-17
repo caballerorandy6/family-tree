@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import type { CustomNodeElementProps, TreeNodeDatum } from 'react-d3-tree';
@@ -468,13 +468,11 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
   }, []);
 
   // Transform members to tree data
-  const treeData = useMemo(() => transformToTreeData(members), [members]);
+  const treeData = transformToTreeData(members);
 
   // Render custom node with closure over members and click handler
-  const renderNode = useCallback(
-    (props: CustomNodeElementProps) => renderCustomNode(props, members, setSelectedMember),
-    [members, setSelectedMember]
-  );
+  const renderNode = (props: CustomNodeElementProps) =>
+    renderCustomNode(props, members, setSelectedMember);
 
   // Empty state with enhanced design
   if (members.length === 0) {

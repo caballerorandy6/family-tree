@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import type { FamilyMemberWithRelations } from '@familytree/types/member.types';
@@ -113,7 +113,7 @@ export function MemberDetailDialog({
   const { removeMember, setSelectedMember } = useTreeStore();
 
   // Calculate all relationships
-  const relationships = useMemo(() => {
+  const relationships = (() => {
     if (!member) return null;
 
     const parents = getParentsOf(member, existingMembers);
@@ -178,7 +178,7 @@ export function MemberDetailDialog({
       grandchildren: [...new Map(grandchildren.map(m => [m.id, m])).values()],
       greatGrandchildren: [...new Map(greatGrandchildren.map(m => [m.id, m])).values()],
     };
-  }, [member, existingMembers]);
+  })();
 
   if (!member || !relationships) return null;
 

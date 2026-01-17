@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -125,17 +125,15 @@ export function EditMemberDialog({
   const generation = watch('generation');
 
   // Check if this is a half-sibling
-  const isHalfSibling = useMemo(() => {
-    return HALF_SIBLING_RELATIONSHIPS.includes(relationship as typeof HALF_SIBLING_RELATIONSHIPS[number]);
-  }, [relationship]);
+  const isHalfSibling = HALF_SIBLING_RELATIONSHIPS.includes(
+    relationship as typeof HALF_SIBLING_RELATIONSHIPS[number]
+  );
 
   // Get valid parent options (filtered to prevent circular relationships)
-  const validParentOptions = useMemo(() => {
-    return getValidParentOptions(member.id, existingMembers);
-  }, [member.id, existingMembers]);
+  const validParentOptions = getValidParentOptions(member.id, existingMembers);
 
   // Get valid second parent options (exclude first parent and spouses for half-siblings)
-  const validSecondParentOptions = useMemo(() => {
+  const validSecondParentOptions = (() => {
     if (!parentId) return validParentOptions;
 
     let options = validParentOptions.filter(m => m.id !== parentId);
@@ -148,7 +146,7 @@ export function EditMemberDialog({
     }
 
     return options;
-  }, [parentId, validParentOptions, isHalfSibling, existingMembers]);
+  })();
 
   const birthYear = watch('birthYear');
 

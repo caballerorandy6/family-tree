@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -108,13 +108,12 @@ export function AddMemberDialog({
   const secondParentId = watch('secondParentId');
 
   // Get the related member
-  const relatedMember = useMemo(() => {
-    if (!relatedToId) return undefined;
-    return existingMembers.find(m => m.id === relatedToId);
-  }, [relatedToId, existingMembers]);
+  const relatedMember = relatedToId
+    ? existingMembers.find(m => m.id === relatedToId)
+    : undefined;
 
   // Get valid parent options based on member type
-  const validParentOptions = useMemo(() => {
+  const validParentOptions = (() => {
     // For siblings: only show the parents of the reference sibling
     if (memberType === 'sibling' && relatedMember) {
       const siblingParents: FamilyMemberWithRelations[] = [];
@@ -134,10 +133,10 @@ export function AddMemberDialog({
     }
 
     return getValidParentOptions(undefined, existingMembers);
-  }, [existingMembers, memberType, relatedMember]);
+  })();
 
   // Get valid second parent options (exclude first parent and spouses for half-siblings)
-  const validSecondParentOptions = useMemo(() => {
+  const validSecondParentOptions = (() => {
     if (!parentId) return [];
 
     let options = validParentOptions.filter(m => m.id !== parentId);
@@ -163,7 +162,7 @@ export function AddMemberDialog({
     }
 
     return options;
-  }, [parentId, validParentOptions, isHalfSibling, existingMembers]);
+  })();
 
   // Auto-set parents when sibling is selected (separate from generation calc to avoid loops)
   useEffect(() => {

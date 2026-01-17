@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -31,81 +31,78 @@ export function PhotoUpload({
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(value);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-      // Validate file type
-      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        toast.error('Please select a valid image (JPEG, PNG, WebP, or GIF)');
-        return;
+    // Validate file type
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error('Please select a valid image (JPEG, PNG, WebP, or GIF)');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Image must be smaller than 5MB');
+      return;
+    }
+
+    // Show preview immediately
+    const localPreview = URL.createObjectURL(file);
+    setPreviewUrl(localPreview);
+
+    // Upload file
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('treeId', treeId);
+
+      const response = await fetch(`${API_URL}/files/profile-photo`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json() as { success: boolean; data?: { photoUrl: string }; error?: { message: string } };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message ?? 'Upload failed');
       }
 
-      // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error('Image must be smaller than 5MB');
-        return;
+      if (result.data?.photoUrl) {
+        onChange(result.data.photoUrl);
+        setPreviewUrl(result.data.photoUrl);
+        toast.success('Photo uploaded successfully');
       }
-
-      // Show preview immediately
-      const localPreview = URL.createObjectURL(file);
-      setPreviewUrl(localPreview);
-
-      // Upload file
-      setIsUploading(true);
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('treeId', treeId);
-
-        const response = await fetch(`${API_URL}/files/profile-photo`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: formData,
-        });
-
-        const result = await response.json() as { success: boolean; data?: { photoUrl: string }; error?: { message: string } };
-
-        if (!response.ok || !result.success) {
-          throw new Error(result.error?.message ?? 'Upload failed');
-        }
-
-        if (result.data?.photoUrl) {
-          onChange(result.data.photoUrl);
-          setPreviewUrl(result.data.photoUrl);
-          toast.success('Photo uploaded successfully');
-        }
-      } catch (error) {
-        // Revert preview on error
-        setPreviewUrl(value);
-        toast.error(error instanceof Error ? error.message : 'Failed to upload photo');
-      } finally {
-        setIsUploading(false);
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+    } catch (error) {
+      // Revert preview on error
+      setPreviewUrl(value);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload photo');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-    },
-    [accessToken, onChange, treeId, value]
-  );
+    }
+  };
 
-  const handleRemovePhoto = useCallback(() => {
+  const handleRemovePhoto = () => {
     setPreviewUrl(undefined);
     onChange(undefined);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [onChange]);
+  };
 
-  const handleClick = useCallback(() => {
+  const handleClick = () => {
     if (!disabled && !isUploading) {
       fileInputRef.current?.click();
     }
-  }, [disabled, isUploading]);
+  };
 
   return (
     <div className="space-y-2">

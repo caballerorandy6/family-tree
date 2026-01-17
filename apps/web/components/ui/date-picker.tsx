@@ -33,7 +33,7 @@ export function DatePicker({
   });
 
   // Generate years for the current decade view
-  const years = React.useMemo(() => {
+  const years = (() => {
     const result: number[] = [];
     const startYear = decade;
     const endYear = decade + 9;
@@ -44,10 +44,10 @@ export function DatePicker({
       }
     }
     return result;
-  }, [decade, fromYear, toYear]);
+  })();
 
   // Generate decades for quick navigation
-  const decades = React.useMemo(() => {
+  const decades = (() => {
     const result: number[] = [];
     const startDecade = Math.floor(fromYear / 10) * 10;
     const endDecade = Math.floor(toYear / 10) * 10;
@@ -56,7 +56,7 @@ export function DatePicker({
       result.push(d);
     }
     return result;
-  }, [fromYear, toYear]);
+  })();
 
   const handleSelectYear = (year: number) => {
     onChange(year);
