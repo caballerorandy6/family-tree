@@ -31,52 +31,40 @@ interface FamilyTreeD3Props {
   accessToken: string;
 }
 
-// Enhanced color palette with richer gradients and glow effects
+// Clean color palette for genders
 function getGenderColors(gender?: string) {
   if (gender === 'male') {
     return {
-      bgGradientFrom: '#e0f2fe',
-      bgGradientTo: '#bae6fd',
-      border: '#0284c7',
-      borderLight: '#38bdf8',
-      text: '#0c4a6e',
-      accent: '#0369a1',
-      glow: 'rgba(14, 165, 233, 0.3)',
+      bg: '#dbeafe',
+      border: '#3b82f6',
+      text: '#1e40af',
     };
   }
   if (gender === 'female') {
     return {
-      bgGradientFrom: '#fce7f3',
-      bgGradientTo: '#fbcfe8',
-      border: '#db2777',
-      borderLight: '#f472b6',
-      text: '#831843',
-      accent: '#be185d',
-      glow: 'rgba(236, 72, 153, 0.3)',
+      bg: '#fce7f3',
+      border: '#ec4899',
+      text: '#9d174d',
     };
   }
   return {
-    bgGradientFrom: '#ede9fe',
-    bgGradientTo: '#ddd6fe',
-    border: '#7c3aed',
-    borderLight: '#a78bfa',
-    text: '#4c1d95',
-    accent: '#6d28d9',
-    glow: 'rgba(139, 92, 246, 0.3)',
+    bg: '#ede9fe',
+    border: '#8b5cf6',
+    text: '#5b21b6',
   };
 }
 
-// Card dimensions - LARGER for better visibility
+// Card dimensions - spacious layout
 const CARD_CONFIG = {
-  singleWidth: 200,
-  coupleWidth: 380,
-  cardHeight: 140,
-  avatarSize: 72,
-  avatarRadius: 36,
-  borderRadius: 20,
-  nameFontSize: 15,
-  lifespanFontSize: 13,
-  initialsFontSize: 22,
+  singleWidth: 180,
+  coupleWidth: 340,
+  cardHeight: 160,
+  avatarSize: 56,
+  borderRadius: 16,
+  nameFontSize: 14,
+  lastNameFontSize: 12,
+  lifespanFontSize: 11,
+  initialsFontSize: 18,
 };
 
 function renderCustomNode(
@@ -94,7 +82,7 @@ function renderCustomNode(
   if (isVirtualRoot) {
     return (
       <g>
-        <circle r={8} fill="#94a3b8" stroke="#64748b" strokeWidth={2} />
+        <circle r={6} fill="#94a3b8" stroke="#64748b" strokeWidth={2} />
       </g>
     );
   }
@@ -104,7 +92,7 @@ function renderCustomNode(
 
   const lifespan = attrs.deathYear
     ? `${attrs.birthYear} – ${attrs.deathYear}`
-    : `Born ${attrs.birthYear}`;
+    : `b. ${attrs.birthYear}`;
 
   const isDeceased = !!attrs.deathYear;
 
@@ -118,52 +106,26 @@ function renderCustomNode(
   const firstSpouseColors = firstSpouse ? getGenderColors(firstSpouse.gender) : null;
   const firstSpouseMember = firstSpouse ? findMemberById(firstSpouse.id, members) : null;
 
-  const { singleWidth, coupleWidth, cardHeight, avatarSize, borderRadius, nameFontSize, lifespanFontSize, initialsFontSize } = CARD_CONFIG;
+  const { singleWidth, coupleWidth, cardHeight, avatarSize, borderRadius, nameFontSize, lastNameFontSize, lifespanFontSize, initialsFontSize } = CARD_CONFIG;
   const cardWidth = hasAttachedSpouse ? coupleWidth : singleWidth;
   const cardX = -cardWidth / 2;
   const cardY = -cardHeight / 2;
 
-  const gradientId = `grad-${attrs.id}`;
-  const spouseGradientId = firstSpouse ? `grad-sp-${firstSpouse.id}` : '';
   const shadowId = `shadow-${attrs.id}`;
 
   return (
     <g className="tree-node-group">
       {/* Definitions */}
       <defs>
-        {/* Main member gradient */}
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={colors.bgGradientFrom} />
-          <stop offset="100%" stopColor={colors.bgGradientTo} />
-        </linearGradient>
-
-        {/* Spouse gradient */}
-        {firstSpouseColors && (
-          <linearGradient id={spouseGradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={firstSpouseColors.bgGradientFrom} />
-            <stop offset="100%" stopColor={firstSpouseColors.bgGradientTo} />
-          </linearGradient>
-        )}
-
-        {/* Card shadow with double layer */}
-        <filter id={shadowId} x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12" />
-          <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08" />
-        </filter>
-
-        {/* Glow effect for avatars */}
-        <filter id={`glow-${attrs.id}`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        {/* Card shadow - subtle */}
+        <filter id={shadowId} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#000" floodOpacity="0.1" />
         </filter>
       </defs>
 
       {/* Main card with shadow */}
       <g filter={`url(#${shadowId})`}>
-        {/* Card background */}
+        {/* Card background - clean white with subtle border */}
         <rect
           x={cardX}
           y={cardY}
@@ -172,31 +134,13 @@ function renderCustomNode(
           rx={borderRadius}
           fill="white"
           stroke="#e2e8f0"
-          strokeWidth={1.5}
-        />
-
-        {/* Top accent bar */}
-        <rect
-          x={cardX}
-          y={cardY}
-          width={cardWidth}
-          height={6}
-          rx={borderRadius}
-          fill={colors.border}
-        />
-        {/* Cover the bottom corners of accent bar */}
-        <rect
-          x={cardX}
-          y={cardY + 6}
-          width={cardWidth}
-          height={borderRadius}
-          fill="white"
+          strokeWidth={1}
         />
       </g>
 
       {/* Primary member section */}
       <g
-        transform={hasAttachedSpouse ? `translate(${cardX + 95}, 0)` : 'translate(0, 0)'}
+        transform={hasAttachedSpouse ? `translate(${cardX + 85}, 0)` : 'translate(0, 0)'}
         style={{ cursor: 'pointer' }}
         onClick={(e) => {
           e.stopPropagation();
@@ -204,24 +148,15 @@ function renderCustomNode(
         }}
         className="member-node"
       >
-        {/* Avatar glow ring */}
-        <circle
-          cy={-15}
-          r={avatarSize / 2 + 8}
-          fill={colors.glow}
-          className="avatar-glow"
-        />
-
         {/* Avatar */}
         {member?.photoUrl ? (
-          <foreignObject x={-avatarSize / 2} y={-15 - avatarSize / 2} width={avatarSize} height={avatarSize}>
+          <foreignObject x={-avatarSize / 2} y={-cardHeight / 2 + 20} width={avatarSize} height={avatarSize}>
             <div
-              className="rounded-full overflow-hidden transition-all duration-300 hover:scale-110"
+              className="rounded-full overflow-hidden transition-transform duration-200 hover:scale-105"
               style={{
                 width: avatarSize,
                 height: avatarSize,
-                border: `4px solid ${colors.border}`,
-                boxShadow: `0 0 0 4px ${colors.bgGradientFrom}, 0 4px 12px rgba(0,0,0,0.15)`,
+                border: `3px solid ${colors.border}`,
               }}
             >
               <Image
@@ -234,24 +169,22 @@ function renderCustomNode(
             </div>
           </foreignObject>
         ) : (
-          <g>
-            {/* Avatar background circle */}
+          <g transform={`translate(0, ${-cardHeight / 2 + 20 + avatarSize / 2})`}>
+            {/* Avatar circle */}
             <circle
-              cy={-15}
               r={avatarSize / 2}
-              fill={`url(#${gradientId})`}
+              fill={colors.bg}
               stroke={colors.border}
-              strokeWidth={4}
-              className="transition-all duration-300"
+              strokeWidth={3}
             />
             {/* Initials */}
             <text
-              y={-8}
+              y={6}
               textAnchor="middle"
               fontSize={initialsFontSize}
-              fontWeight={700}
+              fontWeight={600}
               fill={colors.text}
-              style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               {data.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </text>
@@ -260,65 +193,52 @@ function renderCustomNode(
 
         {/* Name */}
         <text
-          y={35}
+          y={avatarSize / 2 + 8}
           textAnchor="middle"
           fontSize={nameFontSize}
-          fontWeight={700}
+          fontWeight={600}
           fill="#1e293b"
-          style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
         >
           {member?.firstName || data.name.split(' ')[0]}
         </text>
 
         {/* Last name */}
         <text
-          y={52}
+          y={avatarSize / 2 + 24}
           textAnchor="middle"
-          fontSize={nameFontSize - 2}
+          fontSize={lastNameFontSize}
           fontWeight={500}
           fill="#475569"
-          style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
         >
           {member?.lastName || data.name.split(' ')[1] || ''}
         </text>
 
-        {/* Lifespan with deceased indicator */}
-        <g transform="translate(0, 68)">
-          {isDeceased && (
-            <text
-              x={-35}
-              textAnchor="middle"
-              fontSize={12}
-              fill="#94a3b8"
-            >
-              ✝
-            </text>
-          )}
-          <text
-            x={isDeceased ? 5 : 0}
-            textAnchor="middle"
-            fontSize={lifespanFontSize}
-            fill="#64748b"
-            fontWeight={500}
-            style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
-          >
-            {lifespan}
-          </text>
-        </g>
+        {/* Lifespan */}
+        <text
+          y={avatarSize / 2 + 40}
+          textAnchor="middle"
+          fontSize={lifespanFontSize}
+          fill="#64748b"
+          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+        >
+          {isDeceased ? '✝ ' : ''}{lifespan}
+        </text>
       </g>
 
       {/* Heart connector and spouse section */}
       {hasAttachedSpouse && firstSpouse && firstSpouseColors && (
         <>
           {/* Heart connector */}
-          <g transform="translate(0, -8)">
-            <circle cx={0} cy={0} r={18} fill="#fdf2f8" stroke="#fce7f3" strokeWidth={2} />
+          <g transform="translate(0, -10)">
+            <circle cx={0} cy={0} r={14} fill="#fdf2f8" stroke="#fce7f3" strokeWidth={1.5} />
             <text
               x={0}
-              y={6}
+              y={5}
               textAnchor="middle"
               fill="#ec4899"
-              fontSize={18}
+              fontSize={14}
               className="heart-icon"
             >
               ♥
@@ -327,7 +247,7 @@ function renderCustomNode(
 
           {/* Spouse section */}
           <g
-            transform={`translate(${cardX + coupleWidth - 95}, 0)`}
+            transform={`translate(${cardX + coupleWidth - 85}, 0)`}
             style={{ cursor: 'pointer' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -335,24 +255,15 @@ function renderCustomNode(
             }}
             className="member-node"
           >
-            {/* Spouse avatar glow */}
-            <circle
-              cy={-15}
-              r={avatarSize / 2 + 8}
-              fill={firstSpouseColors.glow}
-              className="avatar-glow"
-            />
-
             {/* Spouse avatar */}
             {firstSpouse.photoUrl ? (
-              <foreignObject x={-avatarSize / 2} y={-15 - avatarSize / 2} width={avatarSize} height={avatarSize}>
+              <foreignObject x={-avatarSize / 2} y={-cardHeight / 2 + 20} width={avatarSize} height={avatarSize}>
                 <div
-                  className="rounded-full overflow-hidden transition-all duration-300 hover:scale-110"
+                  className="rounded-full overflow-hidden transition-transform duration-200 hover:scale-105"
                   style={{
                     width: avatarSize,
                     height: avatarSize,
-                    border: `4px solid ${firstSpouseColors.border}`,
-                    boxShadow: `0 0 0 4px ${firstSpouseColors.bgGradientFrom}, 0 4px 12px rgba(0,0,0,0.15)`,
+                    border: `3px solid ${firstSpouseColors.border}`,
                   }}
                 >
                   <Image
@@ -365,21 +276,20 @@ function renderCustomNode(
                 </div>
               </foreignObject>
             ) : (
-              <g>
+              <g transform={`translate(0, ${-cardHeight / 2 + 20 + avatarSize / 2})`}>
                 <circle
-                  cy={-15}
                   r={avatarSize / 2}
-                  fill={`url(#${spouseGradientId})`}
+                  fill={firstSpouseColors.bg}
                   stroke={firstSpouseColors.border}
-                  strokeWidth={4}
+                  strokeWidth={3}
                 />
                 <text
-                  y={-8}
+                  y={6}
                   textAnchor="middle"
                   fontSize={initialsFontSize}
-                  fontWeight={700}
+                  fontWeight={600}
                   fill={firstSpouseColors.text}
-                  style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
                   {firstSpouse.firstName[0]}{firstSpouse.name.split(' ')[1]?.[0] || ''}
                 </text>
@@ -388,38 +298,37 @@ function renderCustomNode(
 
             {/* Spouse name */}
             <text
-              y={35}
+              y={avatarSize / 2 + 8}
               textAnchor="middle"
               fontSize={nameFontSize}
-              fontWeight={700}
+              fontWeight={600}
               fill="#1e293b"
-              style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               {firstSpouse.firstName}
             </text>
 
             {/* Spouse last name */}
             <text
-              y={52}
+              y={avatarSize / 2 + 24}
               textAnchor="middle"
-              fontSize={nameFontSize - 2}
+              fontSize={lastNameFontSize}
               fontWeight={500}
               fill="#475569"
-              style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               {firstSpouse.name.split(' ')[1] || ''}
             </text>
 
             {/* Spouse birth year */}
             <text
-              y={68}
+              y={avatarSize / 2 + 40}
               textAnchor="middle"
               fontSize={lifespanFontSize}
               fill="#64748b"
-              fontWeight={500}
-              style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
-              Born {firstSpouse.birthYear}
+              b. {firstSpouse.birthYear}
             </text>
           </g>
         </>
@@ -427,14 +336,14 @@ function renderCustomNode(
 
       {/* Badge for additional spouses */}
       {attachedSpouses.length > 1 && (
-        <g transform={`translate(${cardX + cardWidth - 18}, ${cardY + 18})`}>
-          <circle r={14} fill="#fef3c7" stroke="#f59e0b" strokeWidth={2} />
+        <g transform={`translate(${cardX + cardWidth - 16}, ${cardY + 16})`}>
+          <circle r={12} fill="#fef3c7" stroke="#f59e0b" strokeWidth={1.5} />
           <text
-            y={5}
+            y={4}
             textAnchor="middle"
             fill="#b45309"
-            fontSize={12}
-            fontWeight={700}
+            fontSize={11}
+            fontWeight={600}
           >
             +{attachedSpouses.length - 1}
           </text>
@@ -443,45 +352,45 @@ function renderCustomNode(
 
       {/* Indicator for spouse elsewhere in tree */}
       {elsewhereSpouses.length > 0 && !hasAttachedSpouse && (
-        <g transform={`translate(${singleWidth / 2 + 10}, -15)`}>
+        <g transform={`translate(${singleWidth / 2 + 8}, -10)`}>
           <rect
-            x={-35}
-            y={-18}
-            width={70}
-            height={40}
-            rx={10}
+            x={-30}
+            y={-14}
+            width={60}
+            height={32}
+            rx={8}
             fill="#fef3c7"
             stroke="#fbbf24"
-            strokeWidth={2}
-            strokeDasharray="6,3"
+            strokeWidth={1.5}
+            strokeDasharray="4,2"
           />
-          <text y={2} textAnchor="middle" fill="#f59e0b" fontSize={14}>♥</text>
+          <text y={0} textAnchor="middle" fill="#f59e0b" fontSize={12}>♥</text>
           <text
-            y={16}
+            y={12}
             textAnchor="middle"
             fill="#92400e"
-            fontSize={10}
-            fontWeight={600}
+            fontSize={9}
+            fontWeight={500}
           >
             {elsewhereSpouses[0]?.firstName || 'Spouse'}
           </text>
         </g>
       )}
 
-      {/* Connection points */}
+      {/* Connection points - minimal */}
       <circle
-        cy={cardY - 6}
-        r={6}
+        cy={cardY - 4}
+        r={4}
         fill={colors.border}
         stroke="white"
-        strokeWidth={3}
+        strokeWidth={2}
       />
       <circle
-        cy={cardY + cardHeight + 6}
-        r={6}
+        cy={cardY + cardHeight + 4}
+        r={4}
         fill="#94a3b8"
         stroke="white"
-        strokeWidth={3}
+        strokeWidth={2}
       />
     </g>
   );
@@ -514,10 +423,8 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
-  // Transform members to tree data (React Compiler handles memoization)
   const treeData = transformToTreeData(members);
 
-  // Render custom node
   const renderNode = (props: CustomNodeElementProps) =>
     renderCustomNode(props, members, setSelectedMember);
 
@@ -622,17 +529,17 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
       {/* Tree container */}
       <div
         ref={containerRef}
-        className="tree-container relative h-[750px] rounded-2xl border-2 shadow-xl overflow-hidden"
+        className="tree-container relative h-[700px] rounded-2xl border shadow-lg overflow-hidden"
         style={{
-          background: 'linear-gradient(180deg, #f1f5f9 0%, #ffffff 30%, #ffffff 70%, #f1f5f9 100%)',
+          background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%)',
         }}
       >
         {/* Grid pattern */}
         <div
           className="absolute inset-0 opacity-30 pointer-events-none"
           style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, #94a3b8 1px, transparent 0)',
-            backgroundSize: '40px 40px'
+            backgroundImage: 'radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0)',
+            backgroundSize: '32px 32px'
           }}
         />
 
@@ -644,15 +551,15 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
             pathFunc="step"
             translate={{
               x: dimensions.width / 2,
-              y: 120,
+              y: 100,
             }}
             zoom={zoom}
             onUpdate={({ zoom: newZoom }) => setZoom(newZoom)}
-            separation={{ siblings: 2, nonSiblings: 2.5 }}
-            nodeSize={{ x: 400, y: 220 }}
+            separation={{ siblings: 1.8, nonSiblings: 2.2 }}
+            nodeSize={{ x: 360, y: 200 }}
             pathClassFunc={() => 'tree-link'}
             enableLegacyTransitions
-            transitionDuration={400}
+            transitionDuration={300}
             collapsible={false}
             zoomable
             draggable
@@ -661,30 +568,28 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-8 p-5 rounded-2xl bg-slate-50/80 dark:bg-slate-900/80 border backdrop-blur-sm">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Legend</span>
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-sky-100 to-sky-200 border-[3px] border-sky-600 shadow-sm" />
-            <span className="text-sm font-medium text-muted-foreground">Male</span>
+      <div className="flex flex-wrap items-center justify-center gap-6 p-4 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Legend</span>
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-blue-100 border-2 border-blue-500" />
+            <span className="text-sm text-muted-foreground">Male</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-100 to-pink-200 border-[3px] border-pink-600 shadow-sm" />
-            <span className="text-sm font-medium text-muted-foreground">Female</span>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-pink-100 border-2 border-pink-500" />
+            <span className="text-sm text-muted-foreground">Female</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 border-[3px] border-violet-600 shadow-sm" />
-            <span className="text-sm font-medium text-muted-foreground">Other</span>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-purple-100 border-2 border-purple-500" />
+            <span className="text-sm text-muted-foreground">Other</span>
           </div>
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-pink-50 border-2 border-pink-200">
-              <span className="text-pink-500 text-sm">♥</span>
-            </div>
-            <span className="text-sm font-medium text-muted-foreground">Couple</span>
+          <div className="flex items-center gap-2">
+            <span className="text-pink-500 text-sm">♥</span>
+            <span className="text-sm text-muted-foreground">Couple</span>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <span className="text-slate-400 text-sm">✝</span>
-            <span className="text-sm font-medium text-muted-foreground">Deceased</span>
+            <span className="text-sm text-muted-foreground">Deceased</span>
           </div>
         </div>
       </div>
