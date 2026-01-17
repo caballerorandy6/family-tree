@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'FamilyTree - Digital Family Tree',
-  description: 'Create and manage your family genealogical trees',
+  title: 'Family Timeline - Digital Family History',
+  description: 'Create and manage your family timeline and genealogy',
 };
 
 export default function RootLayout({

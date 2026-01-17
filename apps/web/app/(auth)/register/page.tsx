@@ -16,7 +16,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Create an Account</CardTitle>
-        <CardDescription>Start building your family tree today</CardDescription>
+        <CardDescription>Start building your family timeline today</CardDescription>
       </CardHeader>
       <CardContent>
         {error ? (

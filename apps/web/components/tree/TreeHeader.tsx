@@ -14,24 +14,24 @@ interface TreeHeaderProps {
 
 export function TreeHeader({ tree }: TreeHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <Link href="/dashboard">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{tree.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{tree.name}</h1>
             {tree.isPublic ? (
-              <Globe className="h-5 w-5 text-muted-foreground" />
+              <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
             ) : (
-              <Lock className="h-5 w-5 text-muted-foreground" />
+              <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
             )}
           </div>
           {tree.description ? (
-            <p className="text-muted-foreground">{tree.description}</p>
+            <p className="text-sm text-muted-foreground line-clamp-2">{tree.description}</p>
           ) : null}
         </div>
       </div>

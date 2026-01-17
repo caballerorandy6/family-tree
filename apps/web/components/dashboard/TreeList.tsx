@@ -34,7 +34,7 @@ export function TreeList({ initialTrees, accessToken }: TreeListProps) {
   }, [initialTrees, setTrees]);
 
   const handleDelete = async (treeId: string) => {
-    const confirmed = window.confirm('Are you sure you want to delete this family tree? This action cannot be undone.');
+    const confirmed = window.confirm('Are you sure you want to delete this timeline? This action cannot be undone.');
     if (!confirmed) return;
 
     const response = await apiWithAuth<{ message: string }>(`/trees/${treeId}`, accessToken, {
@@ -47,23 +47,23 @@ export function TreeList({ initialTrees, accessToken }: TreeListProps) {
     }
 
     removeTree(treeId);
-    toast.success('Family tree deleted successfully');
+    toast.success('Timeline deleted successfully');
   };
 
   if (trees.length === 0) {
     return (
-      <div className="text-center py-12">
-        <TreeDeciduous className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-xl font-semibold mb-2">No family trees yet</h3>
-        <p className="text-muted-foreground mb-4">
-          Create your first family tree to start preserving your family history.
+      <div className="text-center py-8 sm:py-12 px-4">
+        <TreeDeciduous className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-lg sm:text-xl font-semibold mb-2">No timelines yet</h3>
+        <p className="text-sm sm:text-base text-muted-foreground mb-4">
+          Create your first timeline to start preserving your family history.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {trees.map((tree) => (
         <Card key={tree.id} className="relative overflow-hidden">
           <CardHeader className="pb-2">
@@ -114,7 +114,7 @@ export function TreeList({ initialTrees, accessToken }: TreeListProps) {
               </div>
             </div>
             <Link href={`/tree/${tree.id}`}>
-              <Button className="w-full">View Tree</Button>
+              <Button className="w-full">View Timeline</Button>
             </Link>
           </CardContent>
         </Card>

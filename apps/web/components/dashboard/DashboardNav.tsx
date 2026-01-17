@@ -39,11 +39,11 @@ export function DashboardNav({ user }: DashboardNavProps) {
     .slice(0, 2);
 
   return (
-    <header className="border-b bg-background">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <header className="border-b bg-background sticky top-0 z-50">
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <TreeDeciduous className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">FamilyTree</span>
+          <TreeDeciduous className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+          <span className="text-lg sm:text-xl font-bold">Family Timeline</span>
         </Link>
 
         <DropdownMenu>

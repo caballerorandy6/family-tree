@@ -90,18 +90,18 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-slate-900 border shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 sm:p-4 rounded-xl bg-white dark:bg-slate-900 border shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Users className="h-5 w-5 text-primary" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
           <div>
-            <p className="font-semibold text-foreground">{members.length} members</p>
-            <p className="text-sm text-muted-foreground">{minYear} → {maxYear}</p>
+            <p className="font-semibold text-sm sm:text-base text-foreground">{members.length} members</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{minYear} → {maxYear}</p>
           </div>
         </div>
 
-        <Button onClick={() => setAddDialogOpen(true)}>
+        <Button onClick={() => setAddDialogOpen(true)} size="sm" className="w-full sm:w-auto">
           <UserPlus className="mr-2 h-4 w-4" />
           Add Member
         </Button>
@@ -109,35 +109,35 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
 
       {/* Timeline */}
       <div className="relative rounded-xl border bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 shadow-lg">
-        {/* Navigation arrows */}
+        {/* Navigation arrows - hidden on mobile, use swipe instead */}
         <button
           onClick={() => scroll('left')}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg border flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+          className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg border items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
         <button
           onClick={() => scroll('right')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg border flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+          className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-slate-800 shadow-lg border items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
 
         {/* Scrollable area */}
         <div
           ref={scrollRef}
-          className="overflow-x-auto overflow-y-hidden px-16 py-10"
-          style={{ scrollbarWidth: 'thin' }}
+          className="overflow-x-auto overflow-y-hidden px-4 sm:px-16 py-6 sm:py-10"
+          style={{ scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}
         >
-          <div className="relative" style={{ minWidth: uniqueYears.length * 160 + 150, height: 340 }}>
+          <div className="relative" style={{ minWidth: uniqueYears.length * 130 + 100, height: 300 }}>
 
             {/* Timeline line */}
-            <div className="absolute left-0 right-0 top-[220px] h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full shadow-sm" />
+            <div className="absolute left-0 right-0 top-[180px] sm:top-[200px] h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full shadow-sm" />
 
             {/* Year markers and members */}
             {uniqueYears.map((year, yearIndex) => {
               const membersInYear = sortedMembers.filter(m => m.birthYear === year);
-              const xPosition = yearIndex * 140 + 50;
+              const xPosition = yearIndex * 120 + 40;
 
               return (
                 <div
@@ -160,7 +160,7 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
                         >
                           {/* Avatar */}
                           <div
-                            className="w-20 h-20 rounded-full overflow-hidden shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl cursor-pointer"
+                            className="w-14 h-14 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl cursor-pointer"
                             style={{
                               backgroundColor: colors.bg,
                               border: `3px solid ${colors.border}`,
@@ -176,7 +176,7 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <span className="text-xl font-semibold" style={{ color: colors.text }}>
+                                <span className="text-base sm:text-xl font-semibold" style={{ color: colors.text }}>
                                   {member.firstName[0]}{member.lastName[0]}
                                 </span>
                               </div>

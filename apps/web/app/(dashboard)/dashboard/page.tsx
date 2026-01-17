@@ -37,11 +37,11 @@ export default async function DashboardPage() {
   const session = await auth();
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">My Family Trees</h1>
-          <p className="text-muted-foreground">Create and manage your family trees</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">My Timelines</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Create and manage your family timelines</p>
         </div>
         {session?.accessToken ? <CreateTreeDialog accessToken={session.accessToken} /> : null}
       </div>

@@ -66,11 +66,11 @@ export function CreateTreeDialog({ accessToken }: CreateTreeDialogProps) {
       };
 
       addTree(treeWithCount);
-      toast.success('Family tree created successfully');
+      toast.success('Timeline created successfully');
       setOpen(false);
       reset();
     } catch {
-      toast.error('Failed to create family tree');
+      toast.error('Failed to create timeline');
     } finally {
       setIsLoading(false);
     }
@@ -86,17 +86,17 @@ export function CreateTreeDialog({ accessToken }: CreateTreeDialogProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Family Tree</DialogTitle>
+          <DialogTitle>Create Timeline</DialogTitle>
           <DialogDescription>
-            Start a new family tree to document your family history.
+            Start a new timeline to document your family history.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Tree Name</Label>
+            <Label htmlFor="name">Timeline Name</Label>
             <Input
               id="name"
-              placeholder="e.g., Smith Family Tree"
+              placeholder="e.g., Smith Family Timeline"
               {...register('name')}
               disabled={isLoading}
             />
@@ -106,7 +106,7 @@ export function CreateTreeDialog({ accessToken }: CreateTreeDialogProps) {
             <Label htmlFor="description">Description (optional)</Label>
             <Textarea
               id="description"
-              placeholder="A brief description of this family tree..."
+              placeholder="A brief description of this timeline..."
               {...register('description')}
               disabled={isLoading}
             />
