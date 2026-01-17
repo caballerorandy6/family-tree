@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { apiWithAuth } from '@/lib/api';
 import type { FamilyTree } from '@familytree/types/tree.types';
 import type { FamilyMemberWithRelations } from '@familytree/types/member.types';
-import { FamilyTreeD3 } from '@/components/tree/FamilyTreeD3';
+import { FamilyTimeline } from '@/components/tree/FamilyTimeline';
 import { TreeHeader } from '@/components/tree/TreeHeader';
 import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 
@@ -41,7 +41,7 @@ async function TreeContent({ treeId, accessToken }: { treeId: string; accessToke
   return (
     <div className="space-y-6">
       <TreeHeader tree={tree} accessToken={accessToken} />
-      <FamilyTreeD3 tree={tree} initialMembers={members} accessToken={accessToken} />
+      <FamilyTimeline tree={tree} initialMembers={members} accessToken={accessToken} />
     </div>
   );
 }
