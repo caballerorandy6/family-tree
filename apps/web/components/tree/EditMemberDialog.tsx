@@ -326,8 +326,8 @@ export function EditMemberDialog({
       }
 
       // Handle siblings updates - siblings share the same parents
-      const finalParentId = data.parentId;
-      const finalSecondParentId = data.secondParentId;
+      let finalParentId = data.parentId;
+      let finalSecondParentId = data.secondParentId;
 
       // Get current siblings before update (check both slots)
       const oldSiblingIds = existingMembers
@@ -339,15 +339,43 @@ export function EditMemberDialog({
         })
         .map(m => m.id);
 
-      // For newly added siblings, assign same parents
+      // For newly added siblings, we need to share parents
       const addedSiblings = selectedSiblingIds.filter(id => !oldSiblingIds.includes(id));
+
+      // If this member has no parents but a sibling does, get parents from sibling first
+      if (!finalParentId && !finalSecondParentId && addedSiblings.length > 0) {
+        for (const siblingId of addedSiblings) {
+          const sibling = existingMembers.find(m => m.id === siblingId);
+          if (sibling && (sibling.parentId || sibling.secondParentId)) {
+            // Use this sibling's parents for this member
+            const memberUpdateData: { parentId?: string; secondParentId?: string } = {};
+            if (sibling.parentId) memberUpdateData.parentId = sibling.parentId;
+            if (sibling.secondParentId) memberUpdateData.secondParentId = sibling.secondParentId;
+
+            // Update this member with sibling's parents
+            const selfUpdateResponse = await apiWithAuth<FamilyMember>(
+              `/members/${member.id}`,
+              accessToken,
+              { method: 'PUT', body: memberUpdateData }
+            );
+            if (selfUpdateResponse.success) {
+              finalParentId = sibling.parentId ?? undefined;
+              finalSecondParentId = sibling.secondParentId ?? undefined;
+              updateMember(member.id, { ...updatedMember, ...selfUpdateResponse.data });
+            }
+            break; // Only need one sibling's parents
+          }
+        }
+      }
+
+      // Now assign parents to all added siblings
       for (const siblingId of addedSiblings) {
         const sibling = existingMembers.find(m => m.id === siblingId);
         if (!sibling) continue;
 
         const siblingUpdateData: { parentId?: string | null; secondParentId?: string | null } = {};
 
-        // Assign this member's parents to the sibling
+        // Assign parents to the sibling
         if (finalParentId && sibling.parentId !== finalParentId) {
           siblingUpdateData.parentId = finalParentId;
         }
@@ -645,9 +673,14 @@ export function EditMemberDialog({
                   {selectedSiblingIds.length} sibling{selectedSiblingIds.length !== 1 ? 's' : ''} selected
                 </p>
               )}
-              {(parentId || secondParentId) && selectedSiblingIds.length > 0 && (
+              {selectedSiblingIds.length > 0 && (parentId || secondParentId) && (
                 <p className="text-xs text-muted-foreground italic">
                   Siblings will share the same parents when saved
+                </p>
+              )}
+              {selectedSiblingIds.length > 0 && !parentId && !secondParentId && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⚠️ Select parents first, or a sibling with parents will share theirs
                 </p>
               )}
             </div>
