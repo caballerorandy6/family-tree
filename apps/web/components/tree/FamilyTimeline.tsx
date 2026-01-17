@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import type { FamilyMemberWithRelations } from '@familytree/types/member.types';
 import type { FamilyTree } from '@familytree/types/tree.types';
@@ -8,7 +9,17 @@ import { useTreeStore } from '@/stores/treeStore';
 import { AddMemberDialog } from './AddMemberDialog';
 import { MemberDetailDialog } from './MemberDetailDialog';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Users, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { UserPlus, Users } from 'lucide-react';
+
+// Dynamic import to avoid SSR issues
+const Chrono = dynamic(() => import('react-chrono').then(mod => mod.Chrono), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[500px]">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+    </div>
+  ),
+});
 
 interface FamilyTimelineProps {
   tree: FamilyTree;
@@ -27,38 +38,104 @@ function getGenderColors(gender?: string | null) {
   return { bg: '#ede9fe', border: '#8b5cf6', text: '#5b21b6' };
 }
 
-// Avatar size
-const AVATAR_SIZE = 56;
-const YEAR_WIDTH = 80;
-const ROW_HEIGHT = 100;
-
 export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTimelineProps) {
   const { members, setMembers, setCurrentTree, selectedMember, setSelectedMember } = useTreeStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<'HORIZONTAL' | 'VERTICAL' | 'VERTICAL_ALTERNATING'>('VERTICAL_ALTERNATING');
 
   useEffect(() => {
     setCurrentTree(tree);
     setMembers(initialMembers);
   }, [tree, initialMembers, setCurrentTree, setMembers]);
 
-  // Calculate year range
-  const years = members.map(m => m.birthYear);
-  const minYear = years.length > 0 ? Math.min(...years) : new Date().getFullYear();
-  const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
-  const yearRange = Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i);
+  // Sort members by birth year
+  const sortedMembers = [...members].sort((a, b) => a.birthYear - b.birthYear);
 
-  // Group members by year
-  const membersByYear = new Map<number, FamilyMemberWithRelations[]>();
-  for (const member of members) {
-    const existing = membersByYear.get(member.birthYear) || [];
-    existing.push(member);
-    membersByYear.set(member.birthYear, existing);
-  }
+  // Convert members to chrono items
+  const items = sortedMembers.map(member => {
+    const lifespan = member.deathYear
+      ? `${member.birthYear} - ${member.deathYear}`
+      : `Born ${member.birthYear}`;
 
-  // Calculate max members in any year (for row height)
-  const maxMembersInYear = Math.max(1, ...Array.from(membersByYear.values()).map(m => m.length));
+    return {
+      title: member.birthYear.toString(),
+      cardTitle: `${member.firstName} ${member.lastName}`,
+      cardSubtitle: lifespan,
+      cardDetailedText: member.occupation || member.relationship || '',
+    };
+  });
+
+  // Custom content for each card
+  const customContent = sortedMembers.map(member => {
+    const colors = getGenderColors(member.gender);
+
+    return (
+      <div
+        key={member.id}
+        className="flex flex-col items-center p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+        onClick={() => setSelectedMember(member)}
+      >
+        {/* Avatar */}
+        <div
+          className="rounded-full overflow-hidden shadow-lg mb-3"
+          style={{
+            width: 80,
+            height: 80,
+            backgroundColor: colors.bg,
+            border: `3px solid ${colors.border}`,
+          }}
+        >
+          {member.photoUrl ? (
+            <Image
+              src={member.photoUrl}
+              alt={`${member.firstName} ${member.lastName}`}
+              width={80}
+              height={80}
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span
+                className="text-2xl font-medium"
+                style={{ color: colors.text, fontFamily: 'Inter, system-ui, sans-serif' }}
+              >
+                {member.firstName[0]}{member.lastName[0]}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Name */}
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {member.firstName} {member.lastName}
+        </h3>
+
+        {/* Lifespan */}
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {member.deathYear ? `${member.birthYear} - ${member.deathYear}` : `Born ${member.birthYear}`}
+          {member.deathYear && <span className="ml-1">✝</span>}
+        </p>
+
+        {/* Occupation/Relationship */}
+        {(member.occupation || member.relationship) && (
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 capitalize">
+            {member.occupation || member.relationship}
+          </p>
+        )}
+
+        {/* Spouse indicator */}
+        {member.spouseId && (
+          <div className="flex items-center gap-1 mt-2 text-pink-500">
+            <span>♥</span>
+            <span className="text-xs">Has spouse</span>
+          </div>
+        )}
+
+        {/* Click hint */}
+        <p className="text-xs text-primary mt-3">Click for details</p>
+      </div>
+    );
+  });
 
   if (members.length === 0) {
     return (
@@ -90,8 +167,10 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
     );
   }
 
-  const timelineWidth = yearRange.length * YEAR_WIDTH * zoom;
-  const timelineHeight = maxMembersInYear * ROW_HEIGHT + 100;
+  // Calculate year range
+  const years = members.map(m => m.birthYear);
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years);
 
   return (
     <div className="space-y-5">
@@ -106,44 +185,37 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
               {members.length} member{members.length !== 1 ? 's' : ''}
             </p>
             <p className="text-sm text-muted-foreground">
-              {minYear} – {maxYear} ({maxYear - minYear + 1} years)
+              {minYear} – {maxYear}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Zoom controls */}
+          {/* Mode selector */}
           <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border rounded-xl p-1.5 shadow-sm">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-lg"
-              onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
-              title="Zoom out"
+              variant={mode === 'HORIZONTAL' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 px-3 text-xs"
+              onClick={() => setMode('HORIZONTAL')}
             >
-              <ZoomOut className="h-4 w-4" />
+              Horizontal
             </Button>
-            <span className="text-sm font-semibold w-16 text-center text-muted-foreground">
-              {Math.round(zoom * 100)}%
-            </span>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-lg"
-              onClick={() => setZoom(z => Math.min(2, z + 0.25))}
-              title="Zoom in"
+              variant={mode === 'VERTICAL_ALTERNATING' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 px-3 text-xs"
+              onClick={() => setMode('VERTICAL_ALTERNATING')}
             >
-              <ZoomIn className="h-4 w-4" />
+              Alternating
             </Button>
-            <div className="w-px h-6 bg-border mx-1" />
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-lg"
-              onClick={() => setZoom(1)}
-              title="Reset zoom"
+              variant={mode === 'VERTICAL' ? 'default' : 'ghost'}
+              size="sm"
+              className="h-8 px-3 text-xs"
+              onClick={() => setMode('VERTICAL')}
             >
-              <RotateCcw className="h-4 w-4" />
+              Vertical
             </Button>
           </div>
 
@@ -154,144 +226,33 @@ export function FamilyTimeline({ tree, initialMembers, accessToken }: FamilyTime
         </div>
       </div>
 
-      {/* Timeline container */}
-      <div
-        ref={containerRef}
-        className="relative rounded-2xl border shadow-lg overflow-auto bg-white dark:bg-slate-900"
-        style={{ height: '600px' }}
-      >
-        <div
-          className="relative"
-          style={{
-            width: timelineWidth + 100,
-            minHeight: timelineHeight,
+      {/* Timeline */}
+      <div className="rounded-2xl border shadow-lg overflow-hidden bg-white dark:bg-slate-900" style={{ minHeight: '600px' }}>
+        <Chrono
+          items={items}
+          mode={mode}
+          scrollable={{ scrollbar: true }}
+          cardHeight={220}
+          cardWidth={300}
+          contentDetailsHeight={100}
+          fontSizes={{
+            title: '1rem',
+            cardTitle: '1.1rem',
+            cardSubtitle: '0.9rem',
+            cardText: '0.85rem',
           }}
+          theme={{
+            primary: '#3b82f6',
+            secondary: '#f1f5f9',
+            cardBgColor: '#ffffff',
+            titleColor: '#3b82f6',
+            titleColorActive: '#1d4ed8',
+          }}
+          useReadMore={false}
+          activeItemIndex={0}
         >
-          {/* Year labels at top */}
-          <div className="sticky top-0 z-20 flex bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border-b">
-            <div className="w-[50px] shrink-0" /> {/* Spacer */}
-            {yearRange.map(year => (
-              <div
-                key={year}
-                className="flex items-center justify-center border-r border-slate-200 dark:border-slate-700"
-                style={{ width: YEAR_WIDTH * zoom, height: 50 }}
-              >
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {year}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Timeline line */}
-          <div
-            className="absolute left-[50px] right-0 h-1 bg-gradient-to-r from-slate-300 via-primary/30 to-slate-300 dark:from-slate-700 dark:via-primary/50 dark:to-slate-700"
-            style={{ top: 75 }}
-          />
-
-          {/* Year markers */}
-          {yearRange.map(year => (
-            <div
-              key={`marker-${year}`}
-              className="absolute w-3 h-3 rounded-full bg-slate-400 dark:bg-slate-600 border-2 border-white dark:border-slate-800"
-              style={{
-                left: 50 + (year - minYear) * YEAR_WIDTH * zoom + (YEAR_WIDTH * zoom) / 2 - 6,
-                top: 73,
-              }}
-            />
-          ))}
-
-          {/* Members */}
-          <div className="relative pt-[100px] pb-8">
-            {yearRange.map(year => {
-              const yearMembers = membersByYear.get(year) || [];
-
-              return yearMembers.map((member, idx) => {
-                const colors = getGenderColors(member.gender);
-                const xPos = 50 + (year - minYear) * YEAR_WIDTH * zoom + (YEAR_WIDTH * zoom) / 2;
-                const yPos = idx * ROW_HEIGHT;
-
-                return (
-                  <div
-                    key={member.id}
-                    className="absolute transform -translate-x-1/2 cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
-                    style={{
-                      left: xPos,
-                      top: yPos,
-                    }}
-                    onClick={() => setSelectedMember(member)}
-                  >
-                    {/* Connection line to timeline */}
-                    {idx === 0 && (
-                      <div
-                        className="absolute left-1/2 w-0.5 bg-slate-300 dark:bg-slate-600"
-                        style={{
-                          top: -yPos - 25,
-                          height: yPos + 25,
-                          transform: 'translateX(-50%)',
-                        }}
-                      />
-                    )}
-
-                    {/* Avatar */}
-                    <div
-                      className="rounded-full overflow-hidden shadow-lg ring-4 ring-white dark:ring-slate-800"
-                      style={{
-                        width: AVATAR_SIZE,
-                        height: AVATAR_SIZE,
-                        backgroundColor: colors.bg,
-                        border: `3px solid ${colors.border}`,
-                      }}
-                    >
-                      {member.photoUrl ? (
-                        <Image
-                          src={member.photoUrl}
-                          alt={`${member.firstName} ${member.lastName}`}
-                          width={AVATAR_SIZE}
-                          height={AVATAR_SIZE}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span
-                            className="text-lg font-medium"
-                            style={{ color: colors.text, fontFamily: 'Inter, system-ui, sans-serif' }}
-                          >
-                            {member.firstName[0]}{member.lastName[0]}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Name label */}
-                    <div className="mt-2 text-center">
-                      <p
-                        className="text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap"
-                        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-                      >
-                        {member.firstName}
-                      </p>
-                    </div>
-
-                    {/* Deceased indicator */}
-                    {member.deathYear && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-slate-500 flex items-center justify-center">
-                        <span className="text-white text-xs">✝</span>
-                      </div>
-                    )}
-
-                    {/* Spouse indicator */}
-                    {member.spouseId && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-pink-100 border border-pink-300 flex items-center justify-center">
-                        <span className="text-pink-500 text-xs">♥</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              });
-            })}
-          </div>
-        </div>
+          {customContent}
+        </Chrono>
       </div>
 
       {/* Legend */}
