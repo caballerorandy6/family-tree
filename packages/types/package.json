@@ -1,0 +1,42 @@
+{
+  "name": "@familytree/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./api.types": {
+      "types": "./dist/api.types.d.ts",
+      "import": "./dist/api.types.js"
+    },
+    "./auth.types": {
+      "types": "./dist/auth.types.d.ts",
+      "import": "./dist/auth.types.js"
+    },
+    "./tree.types": {
+      "types": "./dist/tree.types.d.ts",
+      "import": "./dist/tree.types.js"
+    },
+    "./member.types": {
+      "types": "./dist/member.types.d.ts",
+      "import": "./dist/member.types.js"
+    },
+    "./file.types": {
+      "types": "./dist/file.types.d.ts",
+      "import": "./dist/file.types.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

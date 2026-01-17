@@ -1,0 +1,41 @@
+{
+  "name": "@familytree/validations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./auth.schema": {
+      "types": "./dist/auth.schema.d.ts",
+      "import": "./dist/auth.schema.js"
+    },
+    "./tree.schema": {
+      "types": "./dist/tree.schema.d.ts",
+      "import": "./dist/tree.schema.js"
+    },
+    "./member.schema": {
+      "types": "./dist/member.schema.d.ts",
+      "import": "./dist/member.schema.js"
+    },
+    "./file.schema": {
+      "types": "./dist/file.schema.d.ts",
+      "import": "./dist/file.schema.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

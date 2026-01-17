@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  password     String?
+  image        String?
+  googleId     String?       @unique
+  refreshToken String?
+  familyTrees  FamilyTree[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model FamilyTree {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  coverImage  String?
+  isPublic    Boolean        @default(false)
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members     FamilyMember[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([userId])
+}
+
+model FamilyMember {
+  id             String         @id @default(cuid())
+  firstName      String
+  lastName       String
+  birthYear      Int
+  deathYear      Int?
+  birthPlace     String?
+  deathPlace     String?
+  photoUrl       String?
+  biography      String?        @db.Text
+  occupation     String?
+  relationship   String
+  gender         String?
+  generation     Int            @default(0)
+  parentId       String?
+  secondParentId String?
+  familyTreeId   String
+  familyTree     FamilyTree     @relation(fields: [familyTreeId], references: [id], onDelete: Cascade)
+  parent         FamilyMember?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: SetNull)
+  secondParent   FamilyMember?  @relation("SecondParentChild", fields: [secondParentId], references: [id], onDelete: SetNull)
+  children       FamilyMember[] @relation("ParentChild")
+  secondChildren FamilyMember[] @relation("SecondParentChild")
+  files          FamilyFile[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([familyTreeId])
+  @@index([parentId])
+  @@index([secondParentId])
+}
+
+model FamilyFile {
+  id             String       @id @default(cuid())
+  name           String
+  originalName   String
+  fileKey        String       @unique
+  fileUrl        String
+  fileType       String
+  fileSize       Int
+  category       String?
+  description    String?
+  familyMemberId String
+  familyMember   FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([familyMemberId])
+  @@index([fileKey])
+}

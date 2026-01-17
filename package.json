@@ -1,0 +1,24 @@
+{
+  "name": "family-tree",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @familytree/database generate",
+    "db:push": "pnpm --filter @familytree/database push",
+    "db:studio": "pnpm --filter @familytree/database studio",
+    "db:seed": "pnpm --filter @familytree/database seed"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
