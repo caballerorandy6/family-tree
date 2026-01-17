@@ -245,51 +245,164 @@
   --tree-bg-pattern: radial-gradient(circle at 1px 1px, #334155 1px, transparent 0);
 }
 
-/* Tree link animations */
+/* ============================================
+   FAMILY TREE ENHANCED STYLES
+   ============================================ */
+
+/* Tree Link/Connection Lines */
 .tree-link {
   stroke: var(--tree-line-color);
-  stroke-width: var(--tree-line-width);
+  stroke-width: 3px;
   fill: none;
-  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tree-link:hover {
-  stroke-width: 3px;
+  stroke: #64748b;
+  stroke-width: 4px;
 }
 
-/* React D3 Tree container */
+/* React D3 Tree Container */
 .rd3t-tree-container {
   background: transparent !important;
 }
 
-/* Custom scrollbar for tree container */
+.rd3t-grabbable {
+  cursor: grab;
+}
+
+.rd3t-grabbable:active {
+  cursor: grabbing;
+}
+
+/* Node Group Animations */
+.tree-node-group {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tree-node-group:hover {
+  transform: translateY(-4px);
+}
+
+/* Member Node Hover Effects */
+.member-node {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.member-node:hover {
+  filter: brightness(1.02);
+}
+
+/* Avatar Glow Animation */
+.avatar-glow {
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+.member-node:hover .avatar-glow {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+/* Heart Icon Animation */
+.heart-icon {
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+/* Smooth Zoom Transitions */
+.rd3t-tree-container svg {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tree Container Custom Scrollbar */
 .tree-container::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .tree-container::-webkit-scrollbar-track {
   background: transparent;
+  border-radius: 5px;
 }
 
 .tree-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .tree-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: linear-gradient(180deg, #94a3b8, #64748b);
+  background-clip: content-box;
 }
 
 .dark .tree-container::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: linear-gradient(180deg, #475569, #334155);
+  background-clip: content-box;
 }
 
 .dark .tree-container::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: linear-gradient(180deg, #64748b, #475569);
+  background-clip: content-box;
 }
 
-/* Animations */
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes pulse-soft {
   0%, 100% {
     opacity: 1;
@@ -304,23 +417,29 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
   }
 }
 
-@keyframes heart-beat {
-  0%, 100% {
-    transform: scale(1);
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
   }
-  25% {
-    transform: scale(1.1);
+  100% {
+    background-position: 200% 0;
   }
-  50% {
-    transform: scale(1);
-  }
-  75% {
-    transform: scale(1.1);
-  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-pulse-soft {
@@ -331,11 +450,112 @@
   animation: float 3s ease-in-out infinite;
 }
 
-.animate-heart-beat {
-  animation: heart-beat 1.5s ease-in-out infinite;
+/* ============================================
+   DARK MODE SPECIFIC STYLES
+   ============================================ */
+
+.dark .tree-link {
+  stroke: #475569;
 }
 
-/* Tree node hover effect class */
+.dark .tree-link:hover {
+  stroke: #64748b;
+}
+
+/* Dark mode tree container background */
+.dark .tree-container {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 30%, #1e293b 70%, #0f172a 100%) !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .tree-container {
+    height: 500px !important;
+  }
+
+  .tree-link {
+    stroke-width: 2px;
+  }
+
+  .tree-link:hover {
+    stroke-width: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tree-container {
+    height: 400px !important;
+  }
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+
+.tree-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.dark .tree-loading {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.tree-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   FOCUS STATES FOR ACCESSIBILITY
+   ============================================ */
+
+.member-node:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .tree-container {
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .tree-link {
+    stroke: #000 !important;
+    stroke-width: 2px !important;
+  }
+
+  /* Hide controls when printing */
+  .tree-container + div {
+    display: none !important;
+  }
+}
+
+/* Tree node hover effect class (legacy) */
 .tree-node-hover {
   transition: all 0.2s ease-out;
 }
