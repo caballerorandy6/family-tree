@@ -42,17 +42,129 @@ function getGenderColors(gender?: string) {
   return { bg: '#ede9fe', border: '#8b5cf6', text: '#5b21b6' };
 }
 
-// Card dimensions for individual nodes
+// Card dimensions
 const CARD = {
-  width: 200,
-  height: 180,
-  avatarSize: 60,
-  borderRadius: 16,
-  nameFontSize: 16,
-  lastNameFontSize: 14,
-  lifespanFontSize: 12,
-  initialsFontSize: 20,
+  width: 180,
+  height: 160,
+  avatarSize: 50,
+  borderRadius: 14,
+  nameFontSize: 14,
+  lastNameFontSize: 12,
+  lifespanFontSize: 11,
+  initialsFontSize: 18,
 };
+
+// Render a single person card
+function renderPersonCard(
+  member: FamilyMemberWithRelations,
+  offsetX: number,
+  onMemberClick: (member: FamilyMemberWithRelations) => void
+) {
+  const colors = getGenderColors(member.gender ?? undefined);
+  const { width, height, avatarSize, borderRadius, nameFontSize, lastNameFontSize, lifespanFontSize, initialsFontSize } = CARD;
+  const cardY = -height / 2;
+
+  const lifespan = member.deathYear
+    ? `${member.birthYear} – ${member.deathYear}`
+    : `b. ${member.birthYear}`;
+
+  const isDeceased = !!member.deathYear;
+
+  return (
+    <g
+      key={member.id}
+      transform={`translate(${offsetX}, 0)`}
+      style={{ cursor: 'pointer' }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onMemberClick(member);
+      }}
+    >
+      {/* Card background */}
+      <rect
+        x={-width / 2}
+        y={cardY}
+        width={width}
+        height={height}
+        rx={borderRadius}
+        fill="white"
+        stroke={colors.border}
+        strokeWidth={2}
+      />
+
+      {/* Avatar */}
+      {member.photoUrl ? (
+        <foreignObject x={-avatarSize / 2} y={cardY + 12} width={avatarSize} height={avatarSize}>
+          <div
+            className="rounded-full overflow-hidden"
+            style={{
+              width: avatarSize,
+              height: avatarSize,
+              border: `2px solid ${colors.border}`,
+            }}
+          >
+            <Image
+              src={member.photoUrl}
+              alt={`${member.firstName} ${member.lastName}`}
+              width={avatarSize}
+              height={avatarSize}
+              className="object-cover w-full h-full"
+            />
+          </div>
+        </foreignObject>
+      ) : (
+        <g transform={`translate(0, ${cardY + 12 + avatarSize / 2})`}>
+          <circle r={avatarSize / 2} fill={colors.bg} stroke={colors.border} strokeWidth={2} />
+          <text
+            y={5}
+            textAnchor="middle"
+            fontSize={initialsFontSize}
+            fontWeight={400}
+            fill={colors.text}
+            style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+          >
+            {member.firstName[0]}{member.lastName[0]}
+          </text>
+        </g>
+      )}
+
+      {/* Name */}
+      <text
+        y={cardY + avatarSize + 28}
+        textAnchor="middle"
+        fontSize={nameFontSize}
+        fontWeight={500}
+        fill="#374151"
+        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+      >
+        {member.firstName}
+      </text>
+
+      {/* Last Name */}
+      <text
+        y={cardY + avatarSize + 44}
+        textAnchor="middle"
+        fontSize={lastNameFontSize}
+        fontWeight={400}
+        fill="#6b7280"
+        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+      >
+        {member.lastName}
+      </text>
+
+      {/* Lifespan */}
+      <text
+        y={cardY + avatarSize + 58}
+        textAnchor="middle"
+        fontSize={lifespanFontSize}
+        fill="#9ca3af"
+        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+      >
+        {isDeceased ? '✝ ' : ''}{lifespan}
+      </text>
+    </g>
+  );
+}
 
 function renderCustomNode(
   { nodeDatum }: CustomNodeElementProps,
@@ -73,149 +185,66 @@ function renderCustomNode(
     );
   }
 
-  const member = findMemberById(attrs.id, members);
-  const colors = getGenderColors(attrs.gender);
-
-  const lifespan = attrs.deathYear
-    ? `${attrs.birthYear} – ${attrs.deathYear}`
-    : `b. ${attrs.birthYear}`;
-
-  const isDeceased = !!attrs.deathYear;
-  const hasSpouse = !!attrs.spouseId;
-
-  const { width, height, avatarSize, borderRadius, nameFontSize, lastNameFontSize, lifespanFontSize, initialsFontSize } = CARD;
-  const cardX = -width / 2;
-  const cardY = -height / 2;
-
   const shadowId = `shadow-${attrs.id}`;
+
+  // Couple node - shows two people side by side
+  if (attrs.isCouple && attrs.partner1Id && attrs.partner2Id) {
+    const partner1 = members.find(m => m.id === attrs.partner1Id);
+    const partner2 = members.find(m => m.id === attrs.partner2Id);
+
+    if (!partner1 || !partner2) return null;
+
+    const spacing = 100; // Distance from center to each partner
+
+    return (
+      <g className="tree-node-group">
+        <defs>
+          <filter id={shadowId} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="#000" floodOpacity="0.08" />
+          </filter>
+        </defs>
+
+        <g filter={`url(#${shadowId})`}>
+          {/* Partner 1 */}
+          {renderPersonCard(partner1, -spacing, onMemberClick)}
+
+          {/* Heart connector */}
+          <g transform="translate(0, 0)">
+            <circle r={16} fill="#fdf2f8" stroke="#f9a8d4" strokeWidth={1.5} />
+            <text y={5} textAnchor="middle" fill="#ec4899" fontSize={16}>♥</text>
+          </g>
+
+          {/* Partner 2 */}
+          {renderPersonCard(partner2, spacing, onMemberClick)}
+        </g>
+
+        {/* Connection point to children */}
+        <circle cy={CARD.height / 2 + 3} r={4} fill="#9ca3af" stroke="white" strokeWidth={2} />
+      </g>
+    );
+  }
+
+  // Single person node
+  const member = findMemberById(attrs.id, members);
+  if (!member) return null;
+
+  const colors = getGenderColors(attrs.gender);
 
   return (
     <g className="tree-node-group">
-      {/* Shadow filter */}
       <defs>
         <filter id={shadowId} x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="3" stdDeviation="6" floodColor="#000" floodOpacity="0.1" />
+          <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="#000" floodOpacity="0.08" />
         </filter>
       </defs>
 
-      {/* Card with shadow */}
       <g filter={`url(#${shadowId})`}>
-        <rect
-          x={cardX}
-          y={cardY}
-          width={width}
-          height={height}
-          rx={borderRadius}
-          fill="white"
-          stroke={colors.border}
-          strokeWidth={2}
-        />
-      </g>
-
-      {/* Clickable area */}
-      <g
-        style={{ cursor: 'pointer' }}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (member) onMemberClick(member);
-        }}
-        className="member-node"
-      >
-        {/* Avatar */}
-        {member?.photoUrl ? (
-          <foreignObject x={-avatarSize / 2} y={cardY + 16} width={avatarSize} height={avatarSize}>
-            <div
-              className="rounded-full overflow-hidden"
-              style={{
-                width: avatarSize,
-                height: avatarSize,
-                border: `3px solid ${colors.border}`,
-              }}
-            >
-              <Image
-                src={member.photoUrl}
-                alt={data.name}
-                width={avatarSize}
-                height={avatarSize}
-                className="object-cover w-full h-full"
-              />
-            </div>
-          </foreignObject>
-        ) : (
-          <g transform={`translate(0, ${cardY + 16 + avatarSize / 2})`}>
-            <circle
-              r={avatarSize / 2}
-              fill={colors.bg}
-              stroke={colors.border}
-              strokeWidth={3}
-            />
-            <text
-              y={6}
-              textAnchor="middle"
-              fontSize={initialsFontSize}
-              fontWeight={400}
-              fill={colors.text}
-              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-            >
-              {data.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </text>
-          </g>
-        )}
-
-        {/* First Name */}
-        <text
-          y={cardY + avatarSize + 36}
-          textAnchor="middle"
-          fontSize={nameFontSize}
-          fontWeight={500}
-          fill="#374151"
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-        >
-          {member?.firstName || data.name.split(' ')[0]}
-        </text>
-
-        {/* Last Name */}
-        <text
-          y={cardY + avatarSize + 54}
-          textAnchor="middle"
-          fontSize={lastNameFontSize}
-          fontWeight={400}
-          fill="#6b7280"
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-        >
-          {member?.lastName || data.name.split(' ')[1] || ''}
-        </text>
-
-        {/* Lifespan */}
-        <text
-          y={cardY + avatarSize + 72}
-          textAnchor="middle"
-          fontSize={lifespanFontSize}
-          fill="#9ca3af"
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-        >
-          {isDeceased ? '✝ ' : ''}{lifespan}
-        </text>
-
-        {/* Spouse indicator badge */}
-        {hasSpouse && (
-          <g transform={`translate(${width / 2 - 8}, ${cardY + 8})`}>
-            <circle r={12} fill="#fdf2f8" stroke="#f9a8d4" strokeWidth={1.5} />
-            <text
-              y={5}
-              textAnchor="middle"
-              fill="#ec4899"
-              fontSize={14}
-            >
-              ♥
-            </text>
-          </g>
-        )}
+        {renderPersonCard(member, 0, onMemberClick)}
       </g>
 
       {/* Connection points */}
-      <circle cy={cardY - 3} r={4} fill={colors.border} stroke="white" strokeWidth={2} />
-      <circle cy={cardY + height + 3} r={4} fill="#9ca3af" stroke="white" strokeWidth={2} />
+      <circle cy={-CARD.height / 2 - 3} r={4} fill={colors.border} stroke="white" strokeWidth={2} />
+      <circle cy={CARD.height / 2 + 3} r={4} fill="#9ca3af" stroke="white" strokeWidth={2} />
     </g>
   );
 }
@@ -383,8 +412,8 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
             }}
             zoom={zoom}
             onUpdate={({ zoom: newZoom }) => setZoom(newZoom)}
-            separation={{ siblings: 1.2, nonSiblings: 1.5 }}
-            nodeSize={{ x: 280, y: 240 }}
+            separation={{ siblings: 1.8, nonSiblings: 2.2 }}
+            nodeSize={{ x: 420, y: 220 }}
             pathClassFunc={() => 'tree-link'}
             transitionDuration={0}
             collapsible={false}
@@ -412,7 +441,7 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
           </div>
           <div className="flex items-center gap-2">
             <span className="text-pink-500 text-sm">♥</span>
-            <span className="text-sm text-muted-foreground">Has Spouse</span>
+            <span className="text-sm text-muted-foreground">Couple</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-slate-400 text-sm">✝</span>
