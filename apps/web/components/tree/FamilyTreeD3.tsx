@@ -82,7 +82,7 @@ function renderCustomNode(
   if (isVirtualRoot) {
     return (
       <g>
-        <circle r={6} fill="#94a3b8" stroke="#64748b" strokeWidth={2} />
+        <circle r={6} fill="#a0aec0" stroke="#64748b" strokeWidth={2} />
       </g>
     );
   }
@@ -182,7 +182,7 @@ function renderCustomNode(
               y={6}
               textAnchor="middle"
               fontSize={initialsFontSize}
-              fontWeight={500}
+              fontWeight={400}
               fill={colors.text}
               style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
@@ -196,8 +196,8 @@ function renderCustomNode(
           y={avatarSize / 2 + 12}
           textAnchor="middle"
           fontSize={nameFontSize}
-          fontWeight={500}
-          fill="#334155"
+          fontWeight={400}
+          fill="#475569"
           style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {member?.firstName || data.name.split(' ')[0]}
@@ -208,8 +208,8 @@ function renderCustomNode(
           y={avatarSize / 2 + 30}
           textAnchor="middle"
           fontSize={lastNameFontSize}
-          fontWeight={400}
-          fill="#64748b"
+          fontWeight={300}
+          fill="#78909c"
           style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {member?.lastName || data.name.split(' ')[1] || ''}
@@ -220,7 +220,7 @@ function renderCustomNode(
           y={avatarSize / 2 + 48}
           textAnchor="middle"
           fontSize={lifespanFontSize}
-          fill="#94a3b8"
+          fill="#a0aec0"
           style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {isDeceased ? '✝ ' : ''}{lifespan}
@@ -287,7 +287,7 @@ function renderCustomNode(
                   y={6}
                   textAnchor="middle"
                   fontSize={initialsFontSize}
-                  fontWeight={500}
+                  fontWeight={400}
                   fill={firstSpouseColors.text}
                   style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 >
@@ -301,8 +301,8 @@ function renderCustomNode(
               y={avatarSize / 2 + 12}
               textAnchor="middle"
               fontSize={nameFontSize}
-              fontWeight={500}
-              fill="#334155"
+              fontWeight={400}
+              fill="#475569"
               style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               {firstSpouse.firstName}
@@ -313,8 +313,8 @@ function renderCustomNode(
               y={avatarSize / 2 + 30}
               textAnchor="middle"
               fontSize={lastNameFontSize}
-              fontWeight={400}
-              fill="#64748b"
+              fontWeight={300}
+              fill="#78909c"
               style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               {firstSpouse.name.split(' ')[1] || ''}
@@ -325,7 +325,7 @@ function renderCustomNode(
               y={avatarSize / 2 + 48}
               textAnchor="middle"
               fontSize={lifespanFontSize}
-              fill="#94a3b8"
+              fill="#a0aec0"
               style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
             >
               b. {firstSpouse.birthYear}
@@ -389,7 +389,7 @@ function renderCustomNode(
       <circle
         cy={cardY + cardHeight + 4}
         r={4}
-        fill="#94a3b8"
+        fill="#a0aec0"
         stroke="white"
         strokeWidth={2}
       />
