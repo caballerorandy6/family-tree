@@ -616,14 +616,20 @@ export function AddMemberDialog({
                     {selectedSiblingIds.length} sibling{selectedSiblingIds.length !== 1 ? 's' : ''} selected
                   </p>
                 )}
-                {selectedSiblingIds.length > 0 && (parentId || secondParentId) && (
+                {selectedSiblingIds.length > 0 && parentId && secondParentId && (
                   <p className="text-xs text-muted-foreground italic">
-                    Siblings will share the same parents when saved
+                    Siblings will share both parents (full siblings)
+                  </p>
+                )}
+                {selectedSiblingIds.length > 0 && ((parentId && !secondParentId) || (!parentId && secondParentId)) && (
+                  <p className="text-xs text-muted-foreground italic">
+                    Siblings will share one parent (half-siblings)
                   </p>
                 )}
                 {selectedSiblingIds.length > 0 && !parentId && !secondParentId && (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    ⚠️ Select parents first, or a sibling with parents will share theirs
+                    ⚠️ No parents selected. Will inherit ALL parents from sibling (full siblings).
+                    For half-siblings, select only ONE parent first.
                   </p>
                 )}
               </div>
