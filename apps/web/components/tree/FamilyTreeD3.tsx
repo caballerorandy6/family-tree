@@ -54,17 +54,17 @@ function getGenderColors(gender?: string) {
   };
 }
 
-// Card dimensions - spacious layout
+// Card dimensions - larger and more spacious
 const CARD_CONFIG = {
-  singleWidth: 180,
-  coupleWidth: 340,
-  cardHeight: 160,
-  avatarSize: 56,
+  singleWidth: 220,
+  coupleWidth: 420,
+  cardHeight: 180,
+  avatarSize: 64,
   borderRadius: 16,
-  nameFontSize: 14,
-  lastNameFontSize: 12,
-  lifespanFontSize: 11,
-  initialsFontSize: 18,
+  nameFontSize: 16,
+  lastNameFontSize: 14,
+  lifespanFontSize: 12,
+  initialsFontSize: 20,
 };
 
 function renderCustomNode(
@@ -140,7 +140,7 @@ function renderCustomNode(
 
       {/* Primary member section */}
       <g
-        transform={hasAttachedSpouse ? `translate(${cardX + 85}, 0)` : 'translate(0, 0)'}
+        transform={hasAttachedSpouse ? `translate(${cardX + 105}, 0)` : 'translate(0, 0)'}
         style={{ cursor: 'pointer' }}
         onClick={(e) => {
           e.stopPropagation();
@@ -182,7 +182,7 @@ function renderCustomNode(
               y={6}
               textAnchor="middle"
               fontSize={initialsFontSize}
-              fontWeight={600}
+              fontWeight={500}
               fill={colors.text}
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
@@ -193,11 +193,11 @@ function renderCustomNode(
 
         {/* Name */}
         <text
-          y={avatarSize / 2 + 8}
+          y={avatarSize / 2 + 12}
           textAnchor="middle"
           fontSize={nameFontSize}
-          fontWeight={600}
-          fill="#1e293b"
+          fontWeight={500}
+          fill="#334155"
           style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
         >
           {member?.firstName || data.name.split(' ')[0]}
@@ -205,11 +205,11 @@ function renderCustomNode(
 
         {/* Last name */}
         <text
-          y={avatarSize / 2 + 24}
+          y={avatarSize / 2 + 30}
           textAnchor="middle"
           fontSize={lastNameFontSize}
-          fontWeight={500}
-          fill="#475569"
+          fontWeight={400}
+          fill="#64748b"
           style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
         >
           {member?.lastName || data.name.split(' ')[1] || ''}
@@ -217,10 +217,10 @@ function renderCustomNode(
 
         {/* Lifespan */}
         <text
-          y={avatarSize / 2 + 40}
+          y={avatarSize / 2 + 48}
           textAnchor="middle"
           fontSize={lifespanFontSize}
-          fill="#64748b"
+          fill="#94a3b8"
           style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
         >
           {isDeceased ? '✝ ' : ''}{lifespan}
@@ -230,15 +230,15 @@ function renderCustomNode(
       {/* Heart connector and spouse section */}
       {hasAttachedSpouse && firstSpouse && firstSpouseColors && (
         <>
-          {/* Heart connector */}
-          <g transform="translate(0, -10)">
-            <circle cx={0} cy={0} r={14} fill="#fdf2f8" stroke="#fce7f3" strokeWidth={1.5} />
+          {/* Heart connector - larger */}
+          <g transform="translate(0, -5)">
+            <circle cx={0} cy={0} r={20} fill="#fdf2f8" stroke="#fbcfe8" strokeWidth={2} />
             <text
               x={0}
-              y={5}
+              y={7}
               textAnchor="middle"
               fill="#ec4899"
-              fontSize={14}
+              fontSize={22}
               className="heart-icon"
             >
               ♥
@@ -247,7 +247,7 @@ function renderCustomNode(
 
           {/* Spouse section */}
           <g
-            transform={`translate(${cardX + coupleWidth - 85}, 0)`}
+            transform={`translate(${cardX + coupleWidth - 105}, 0)`}
             style={{ cursor: 'pointer' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -287,7 +287,7 @@ function renderCustomNode(
                   y={6}
                   textAnchor="middle"
                   fontSize={initialsFontSize}
-                  fontWeight={600}
+                  fontWeight={500}
                   fill={firstSpouseColors.text}
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 >
@@ -298,11 +298,11 @@ function renderCustomNode(
 
             {/* Spouse name */}
             <text
-              y={avatarSize / 2 + 8}
+              y={avatarSize / 2 + 12}
               textAnchor="middle"
               fontSize={nameFontSize}
-              fontWeight={600}
-              fill="#1e293b"
+              fontWeight={500}
+              fill="#334155"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               {firstSpouse.firstName}
@@ -310,11 +310,11 @@ function renderCustomNode(
 
             {/* Spouse last name */}
             <text
-              y={avatarSize / 2 + 24}
+              y={avatarSize / 2 + 30}
               textAnchor="middle"
               fontSize={lastNameFontSize}
-              fontWeight={500}
-              fill="#475569"
+              fontWeight={400}
+              fill="#64748b"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               {firstSpouse.name.split(' ')[1] || ''}
@@ -322,10 +322,10 @@ function renderCustomNode(
 
             {/* Spouse birth year */}
             <text
-              y={avatarSize / 2 + 40}
+              y={avatarSize / 2 + 48}
               textAnchor="middle"
               fontSize={lifespanFontSize}
-              fill="#64748b"
+              fill="#94a3b8"
               style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               b. {firstSpouse.birthYear}
@@ -350,26 +350,26 @@ function renderCustomNode(
         </g>
       )}
 
-      {/* Indicator for spouse elsewhere in tree */}
+      {/* Indicator for spouse elsewhere in tree - LARGER */}
       {elsewhereSpouses.length > 0 && !hasAttachedSpouse && (
-        <g transform={`translate(${singleWidth / 2 + 8}, -10)`}>
+        <g transform={`translate(${singleWidth / 2 + 15}, 0)`}>
           <rect
-            x={-30}
-            y={-14}
-            width={60}
-            height={32}
-            rx={8}
+            x={-45}
+            y={-25}
+            width={90}
+            height={55}
+            rx={12}
             fill="#fef3c7"
             stroke="#fbbf24"
-            strokeWidth={1.5}
-            strokeDasharray="4,2"
+            strokeWidth={2}
+            strokeDasharray="6,3"
           />
-          <text y={0} textAnchor="middle" fill="#f59e0b" fontSize={12}>♥</text>
+          <text y={-2} textAnchor="middle" fill="#f59e0b" fontSize={20}>♥</text>
           <text
-            y={12}
+            y={18}
             textAnchor="middle"
             fill="#92400e"
-            fontSize={9}
+            fontSize={13}
             fontWeight={500}
           >
             {elsewhereSpouses[0]?.firstName || 'Spouse'}
@@ -555,8 +555,8 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
             }}
             zoom={zoom}
             onUpdate={({ zoom: newZoom }) => setZoom(newZoom)}
-            separation={{ siblings: 1.8, nonSiblings: 2.2 }}
-            nodeSize={{ x: 360, y: 200 }}
+            separation={{ siblings: 1.6, nonSiblings: 2 }}
+            nodeSize={{ x: 450, y: 240 }}
             pathClassFunc={() => 'tree-link'}
             enableLegacyTransitions
             transitionDuration={300}
