@@ -86,12 +86,14 @@ export function EditMemberDialog({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(member.photoUrl ?? undefined);
+  const [selectedSpouseId, setSelectedSpouseId] = useState<string | undefined>(member.spouseId ?? undefined);
   const { updateMember, setSelectedMember } = useTreeStore();
 
-  // Sync photoUrl when member changes
+  // Sync photoUrl and spouseId when member changes
   useEffect(() => {
     setPhotoUrl(member.photoUrl ?? undefined);
-  }, [member.photoUrl]);
+    setSelectedSpouseId(member.spouseId ?? undefined);
+  }, [member.photoUrl, member.spouseId]);
 
   const {
     register,
@@ -150,6 +152,14 @@ export function EditMemberDialog({
 
   const birthYear = watch('birthYear');
 
+  // Get potential spouses (exclude self, parents, children)
+  const potentialSpouses = existingMembers.filter(m => {
+    if (m.id === member.id) return false; // Exclude self
+    if (m.id === parentId || m.id === secondParentId) return false; // Exclude parents
+    if (m.parentId === member.id || m.secondParentId === member.id) return false; // Exclude children
+    return true;
+  });
+
   // Run validations when parents or birth year change
   useEffect(() => {
     const { errors, warnings } = runAllValidations(
@@ -182,11 +192,16 @@ export function EditMemberDialog({
     setIsLoading(true);
 
     try {
+      const oldSpouseId = member.spouseId;
+      const newSpouseId = selectedSpouseId;
+
+      // Update the member with the new data including spouse
       const response = await apiWithAuth<FamilyMember>(`/members/${member.id}`, accessToken, {
         method: 'PUT',
         body: {
           ...data,
           photoUrl: photoUrl ?? null,
+          spouseId: newSpouseId ?? null,
         },
       });
 
@@ -200,6 +215,54 @@ export function EditMemberDialog({
         ...response.data,
       };
       updateMember(member.id, updatedMember);
+
+      // Handle bidirectional spouse relationship
+      // 1. If old spouse exists and is different from new spouse, remove this member as their spouse
+      if (oldSpouseId && oldSpouseId !== newSpouseId) {
+        const oldSpouse = existingMembers.find(m => m.id === oldSpouseId);
+        if (oldSpouse && oldSpouse.spouseId === member.id) {
+          const clearResponse = await apiWithAuth<FamilyMember>(
+            `/members/${oldSpouseId}`,
+            accessToken,
+            { method: 'PUT', body: { spouseId: null } }
+          );
+          if (clearResponse.success) {
+            updateMember(oldSpouseId, { ...oldSpouse, ...clearResponse.data, spouseId: null });
+          }
+        }
+      }
+
+      // 2. If new spouse exists, set this member as their spouse
+      if (newSpouseId) {
+        const newSpouse = existingMembers.find(m => m.id === newSpouseId);
+        if (newSpouse && newSpouse.spouseId !== member.id) {
+          // First clear the new spouse's old spouse if exists
+          if (newSpouse.spouseId) {
+            const theirOldSpouse = existingMembers.find(m => m.id === newSpouse.spouseId);
+            if (theirOldSpouse && theirOldSpouse.spouseId === newSpouseId) {
+              const clearTheirResponse = await apiWithAuth<FamilyMember>(
+                `/members/${newSpouse.spouseId}`,
+                accessToken,
+                { method: 'PUT', body: { spouseId: null } }
+              );
+              if (clearTheirResponse.success) {
+                updateMember(newSpouse.spouseId, { ...theirOldSpouse, ...clearTheirResponse.data, spouseId: null });
+              }
+            }
+          }
+
+          // Now set this member as their spouse
+          const updateResponse = await apiWithAuth<FamilyMember>(
+            `/members/${newSpouseId}`,
+            accessToken,
+            { method: 'PUT', body: { spouseId: member.id } }
+          );
+          if (updateResponse.success) {
+            updateMember(newSpouseId, { ...newSpouse, ...updateResponse.data, spouseId: member.id });
+          }
+        }
+      }
+
       setSelectedMember(updatedMember);
       toast.success('Family member updated successfully');
       onOpenChange(false);
@@ -301,6 +364,32 @@ export function EditMemberDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Spouse Selector */}
+          <div className="space-y-2">
+            <Label>Spouse / Partner</Label>
+            <Select
+              value={selectedSpouseId ?? '__none__'}
+              onValueChange={(value) => setSelectedSpouseId(value === '__none__' ? undefined : value)}
+              disabled={isLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select spouse" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {potentialSpouses.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${m.gender === 'male' ? 'bg-blue-500' : m.gender === 'female' ? 'bg-pink-500' : 'bg-purple-500'}`}></span>
+                      {m.firstName} {m.lastName} ({m.birthYear})
+                      {m.spouseId && m.spouseId !== member.id && ' - Has spouse'}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {validParentOptions.length > 0 ? (
