@@ -18,8 +18,8 @@ COPY apps/api ./apps/api
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Generate Prisma client
-RUN pnpm --filter @familytree/database generate
+# Generate Prisma client (dummy URL for build, real URL used at runtime)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter @familytree/database generate
 
 # Build packages and api
 RUN pnpm turbo build --filter=api
