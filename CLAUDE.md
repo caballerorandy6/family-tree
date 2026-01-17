@@ -7,10 +7,10 @@ FamilyTree - Digital family tree application (Turborepo Monorepo)
 - Frontend: Next.js 16+, React 19, TypeScript, TailwindCSS, Shadcn UI, Zustand
 - Backend: Express.js 5+, TypeScript, Prisma 6+
 - Database: PostgreSQL (Railway)
-- Storage: Digital Ocean Spaces
+- Storage: Cloudinary
 - Auth: NextAuth.js v5 + JWT
 - Monorepo: Turborepo + pnpm
-- Tree Visualization: react-d3-tree
+- Tree Visualization: Custom horizontal timeline
 
 ## General Principles
 - Review with maximum depth following best practices
@@ -26,7 +26,7 @@ Full rules: `~/.claude/skills/vercel-react-best-practices/AGENTS.md`
 ### CRITICAL - Always Apply
 - `Promise.all()` for parallel async - NEVER sequential awaits
 - Direct imports only - NEVER from barrel/index files
-- `next/dynamic` for heavy components (charts, editors, maps, react-d3-tree)
+- `next/dynamic` for heavy components (charts, editors, maps)
 - Defer analytics until after hydration
 
 ### HIGH - Apply for Performance
@@ -125,12 +125,10 @@ DATABASE_URL=
 JWT_SECRET=
 JWT_REFRESH_SECRET=
 
-# Digital Ocean Spaces
-DO_SPACES_ENDPOINT=
-DO_SPACES_REGION=
-DO_SPACES_BUCKET=
-DO_SPACES_ACCESS_KEY=
-DO_SPACES_SECRET_KEY=
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
 # NextAuth
 NEXTAUTH_SECRET=
