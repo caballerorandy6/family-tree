@@ -10,16 +10,23 @@ FamilyTree - Digital family tree application (Turborepo Monorepo)
 - Storage: Digital Ocean Spaces
 - Auth: NextAuth.js v5 + JWT
 - Monorepo: Turborepo + pnpm
+- Tree Visualization: react-d3-tree
+
+## General Principles
+- Review with maximum depth following best practices
+- NEVER force unnecessary changes
+- Always keep code simple and readable
+- If something works well, don't change it
 
 ## React Best Practices (MANDATORY)
 
-This project follows Vercel's react-best-practices skill.
+This project uses **React 19 Compiler** (`reactCompiler: true` in next.config.ts).
 Full rules: `~/.claude/skills/vercel-react-best-practices/AGENTS.md`
 
 ### CRITICAL - Always Apply
 - `Promise.all()` for parallel async - NEVER sequential awaits
 - Direct imports only - NEVER from barrel/index files
-- `next/dynamic` for heavy components (charts, editors, maps)
+- `next/dynamic` for heavy components (charts, editors, maps, react-d3-tree)
 - Defer analytics until after hydration
 
 ### HIGH - Apply for Performance
@@ -28,8 +35,7 @@ Full rules: `~/.claude/skills/vercel-react-best-practices/AGENTS.md`
 - Suspense boundaries for streaming/loading states
 
 ### MEDIUM - Apply When Relevant
-- useMemo for expensive calculations
-- useCallback for stable function references
+- ~~useMemo/useCallback~~ → **NOT NEEDED** (React 19 Compiler handles memoization automatically)
 - Colocate state near where it's used
 - Optimistic UI updates
 
@@ -72,11 +78,32 @@ family-tree/
 6. Server Components by default
 7. Run `pnpm typecheck` before completing any task
 
-## File Naming
-- Components: PascalCase (TreeView.tsx)
-- Utils: camelCase (formatDate.ts)
-- Types: PascalCase with .types.ts suffix
-- Schemas: camelCase with .schema.ts suffix
+## Naming Conventions
+- **Files**: kebab-case (my-component.tsx) or PascalCase for components (TreeView.tsx)
+- **Components**: PascalCase (MyComponent)
+- **Functions/Variables**: camelCase (myFunction)
+- **Types/Interfaces**: PascalCase (MyType)
+- **Constants**: UPPER_SNAKE_CASE (MY_CONSTANT)
+- **Utils**: camelCase (formatDate.ts)
+- **Types files**: PascalCase with .types.ts suffix
+- **Schemas**: camelCase with .schema.ts suffix
+
+## Styling
+- Tailwind CSS for all styling
+- Shadcn UI for components
+- Mobile-first approach
+- CSS variables in globals.css for theming
+
+## Forms
+- React Hook Form + Zod resolver
+- Client-side AND server-side validation
+- Sonner for toast notifications
+
+## Git Commits
+- Descriptive commits in English
+- One feature per commit
+- DO NOT include mentions of Claude, AI, or "Generated with" in commits
+- DO NOT add Co-Authored-By lines
 
 ## API Response Format
 
