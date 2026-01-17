@@ -53,10 +53,13 @@ model FamilyMember {
   generation     Int            @default(0)
   parentId       String?
   secondParentId String?
+  spouseId       String?        @unique
   familyTreeId   String
   familyTree     FamilyTree     @relation(fields: [familyTreeId], references: [id], onDelete: Cascade)
   parent         FamilyMember?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: SetNull)
   secondParent   FamilyMember?  @relation("SecondParentChild", fields: [secondParentId], references: [id], onDelete: SetNull)
+  spouse         FamilyMember?  @relation("Spouse", fields: [spouseId], references: [id], onDelete: SetNull)
+  spouseOf       FamilyMember?  @relation("Spouse")
   children       FamilyMember[] @relation("ParentChild")
   secondChildren FamilyMember[] @relation("SecondParentChild")
   files          FamilyFile[]
@@ -66,6 +69,7 @@ model FamilyMember {
   @@index([familyTreeId])
   @@index([parentId])
   @@index([secondParentId])
+  @@index([spouseId])
 }
 
 model FamilyFile {

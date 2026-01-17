@@ -31,20 +31,34 @@ export interface FamilyNodeData {
 }
 
 /**
- * Get spouse(s) of a member (those who share children with them)
+ * Get spouse(s) of a member (those who share children OR have direct spouseId link)
  */
 function getSpouses(
   memberId: string,
   members: FamilyMemberWithRelations[]
 ): FamilyMemberWithRelations[] {
   const spouseIds = new Set<string>();
+  const member = members.find(m => m.id === memberId);
 
-  for (const member of members) {
-    if (member.parentId === memberId && member.secondParentId) {
-      spouseIds.add(member.secondParentId);
+  // Check direct spouse relationship (spouseId field)
+  if (member?.spouseId) {
+    spouseIds.add(member.spouseId);
+  }
+
+  // Check if someone has this member as their spouse
+  for (const m of members) {
+    if (m.spouseId === memberId) {
+      spouseIds.add(m.id);
     }
-    if (member.secondParentId === memberId && member.parentId) {
-      spouseIds.add(member.parentId);
+  }
+
+  // Also check shared children (legacy behavior)
+  for (const m of members) {
+    if (m.parentId === memberId && m.secondParentId) {
+      spouseIds.add(m.secondParentId);
+    }
+    if (m.secondParentId === memberId && m.parentId) {
+      spouseIds.add(m.parentId);
     }
   }
 

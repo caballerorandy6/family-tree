@@ -78,6 +78,7 @@ export const createMemberSchema = z.object({
   generation: z.number().int().default(0),
   parentId: z.string().cuid('Invalid parent ID').optional(),
   secondParentId: z.string().cuid('Invalid second parent ID').optional(),
+  spouseId: z.string().cuid('Invalid spouse ID').optional(),
   familyTreeId: z.string().cuid('Invalid family tree ID'),
 });
 
@@ -115,6 +116,7 @@ export const updateMemberSchema = z.object({
   generation: z.number().int().optional(),
   parentId: z.string().cuid('Invalid parent ID').nullable().optional(),
   secondParentId: z.string().cuid('Invalid second parent ID').nullable().optional(),
+  spouseId: z.string().cuid('Invalid spouse ID').nullable().optional(),
 });
 
 export const memberIdParamSchema = z.object({

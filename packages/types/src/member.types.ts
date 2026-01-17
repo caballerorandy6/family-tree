@@ -59,6 +59,7 @@ export interface FamilyMember {
   generation: number;
   parentId: string | null;
   secondParentId: string | null;
+  spouseId: string | null;
   familyTreeId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -67,6 +68,7 @@ export interface FamilyMember {
 export interface FamilyMemberWithRelations extends FamilyMember {
   parent: FamilyMember | null;
   secondParent: FamilyMember | null;
+  spouse: FamilyMember | null;
   children: FamilyMember[];
   files: FamilyFile[];
 }
@@ -102,6 +104,7 @@ export interface CreateFamilyMemberInput {
   generation?: number;
   parentId?: string;
   secondParentId?: string;
+  spouseId?: string;
   familyTreeId: string;
 }
 
@@ -120,4 +123,5 @@ export interface UpdateFamilyMemberInput {
   generation?: number;
   parentId?: string | null;
   secondParentId?: string | null;
+  spouseId?: string | null;
 }

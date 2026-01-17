@@ -267,6 +267,8 @@ export function AddMemberDialog({
         ...data,
         relationship: calculatedRelationship,
         photoUrl: photoUrl ?? undefined,
+        // Set spouseId when adding a spouse
+        spouseId: memberType === 'spouse' && relatedToId ? relatedToId : undefined,
       };
 
       const response = await apiWithAuth<FamilyMemberWithRelations>('/members', accessToken, {
@@ -283,11 +285,31 @@ export function AddMemberDialog({
         ...response.data,
         parent: null,
         secondParent: null,
+        spouse: null,
         children: [],
         files: [],
       };
 
       addMember(newMember);
+
+      // If adding a spouse, update the related member's spouseId
+      if (memberType === 'spouse' && relatedToId) {
+        const relatedMemberData = existingMembers.find(m => m.id === relatedToId);
+        if (relatedMemberData && !relatedMemberData.spouseId) {
+          const updateResponse = await apiWithAuth<FamilyMember>(
+            `/members/${relatedToId}`,
+            accessToken,
+            { method: 'PUT', body: { spouseId: newMember.id } }
+          );
+
+          if (updateResponse.success) {
+            updateMember(relatedToId, {
+              ...relatedMemberData,
+              ...updateResponse.data,
+            });
+          }
+        }
+      }
 
       // If adding an ancestor, update the related member's parentId
       if (memberType === 'ancestor' && relatedToId) {
