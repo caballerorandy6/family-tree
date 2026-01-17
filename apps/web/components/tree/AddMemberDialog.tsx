@@ -556,9 +556,10 @@ export function AddMemberDialog({
                   <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-white dark:bg-slate-800 rounded border">
                     {potentialSiblings.map((m) => {
                       const isSelected = selectedSiblingIds.includes(m.id);
-                      const sharesFather = parentId && m.parentId === parentId;
-                      const sharesMother = secondParentId && m.secondParentId === secondParentId;
-                      const isCurrentSibling = sharesFather || sharesMother;
+                      // Check both slots for shared parents
+                      const sharesParent1 = parentId && (m.parentId === parentId || m.secondParentId === parentId);
+                      const sharesParent2 = secondParentId && (m.parentId === secondParentId || m.secondParentId === secondParentId);
+                      const isCurrentSibling = sharesParent1 || sharesParent2;
 
                       return (
                         <button

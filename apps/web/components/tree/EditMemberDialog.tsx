@@ -92,12 +92,14 @@ export function EditMemberDialog({
       ).map(m => m.id);
       setSelectedChildrenIds(currentChildren);
 
-      // Get current siblings (members who share at least one parent)
+      // Get current siblings (members who share at least one parent - check both slots)
       const currentSiblings = existingMembers.filter(m => {
         if (m.id === member.id) return false;
-        const sharesFather = member.parentId && m.parentId === member.parentId;
-        const sharesMother = member.secondParentId && m.secondParentId === member.secondParentId;
-        return sharesFather || sharesMother;
+        // Check if they share parentId (father) - could be in either slot of the other member
+        const sharesParent1 = member.parentId && (m.parentId === member.parentId || m.secondParentId === member.parentId);
+        // Check if they share secondParentId (mother) - could be in either slot of the other member
+        const sharesParent2 = member.secondParentId && (m.parentId === member.secondParentId || m.secondParentId === member.secondParentId);
+        return sharesParent1 || sharesParent2;
       }).map(m => m.id);
       setSelectedSiblingIds(currentSiblings);
 
@@ -327,13 +329,13 @@ export function EditMemberDialog({
       const finalParentId = data.parentId;
       const finalSecondParentId = data.secondParentId;
 
-      // Get current siblings before update
+      // Get current siblings before update (check both slots)
       const oldSiblingIds = existingMembers
         .filter(m => {
           if (m.id === member.id) return false;
-          const sharesFather = member.parentId && m.parentId === member.parentId;
-          const sharesMother = member.secondParentId && m.secondParentId === member.secondParentId;
-          return sharesFather || sharesMother;
+          const sharesParent1 = member.parentId && (m.parentId === member.parentId || m.secondParentId === member.parentId);
+          const sharesParent2 = member.secondParentId && (m.parentId === member.secondParentId || m.secondParentId === member.secondParentId);
+          return sharesParent1 || sharesParent2;
         })
         .map(m => m.id);
 
@@ -610,9 +612,10 @@ export function EditMemberDialog({
                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-white dark:bg-slate-800 rounded border">
                   {potentialSiblings.map((m) => {
                     const isSelected = selectedSiblingIds.includes(m.id);
-                    const sharesFather = parentId && m.parentId === parentId;
-                    const sharesMother = secondParentId && m.secondParentId === secondParentId;
-                    const isCurrentSibling = sharesFather || sharesMother;
+                    // Check both slots for shared parents
+                    const sharesParent1 = parentId && (m.parentId === parentId || m.secondParentId === parentId);
+                    const sharesParent2 = secondParentId && (m.parentId === secondParentId || m.secondParentId === secondParentId);
+                    const isCurrentSibling = sharesParent1 || sharesParent2;
 
                     return (
                       <button
