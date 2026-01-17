@@ -249,6 +249,9 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
 
   const treeData = transformToTreeData(members);
 
+  // Generate a stable key based on member IDs to force remount when structure changes
+  const treeKey = members.map(m => m.id).sort().join('-') || 'empty';
+
   const renderNode = (props: CustomNodeElementProps) =>
     renderCustomNode(props, members, setSelectedMember);
 
@@ -369,6 +372,7 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
 
         {treeData && dimensions.width > 0 && (
           <Tree
+            key={treeKey}
             data={treeData as TreeNodeDatum}
             renderCustomNodeElement={renderNode}
             orientation="vertical"
@@ -382,8 +386,7 @@ export function FamilyTreeD3({ tree, initialMembers, accessToken }: FamilyTreeD3
             separation={{ siblings: 1.2, nonSiblings: 1.5 }}
             nodeSize={{ x: 280, y: 240 }}
             pathClassFunc={() => 'tree-link'}
-            enableLegacyTransitions
-            transitionDuration={300}
+            transitionDuration={0}
             collapsible={false}
             zoomable
             draggable
